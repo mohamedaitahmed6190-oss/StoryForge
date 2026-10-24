@@ -478,9 +478,13 @@
     var d = obj && obj.format === 'storyforge-book' && obj.data;
     if (!d || !Array.isArray(d.stories) || !Array.isArray(d.characters)) throw new Error('This is not a StoryForge book file.');
     if (B.stories.length || B.idea) save();
+    var refs = d.refsB64 || []; d = Object.assign({}, d); delete d.refsB64;
     B = Object.assign(newBook(), d, { id: 'b' + Date.now().toString(36) });
+    for (var i = 0; i < refs.length && i < B.characters.length; i++) {          // reference images that travel with the book file
+      try { var bin = atob(refs[i]), u8 = new Uint8Array(bin.length); for (var j = 0; j < bin.length; j++) u8[j] = bin.charCodeAt(j); await SF.store.putImg(B.id, 'ref' + i, new Blob([u8], { type: 'image/jpeg' })); } catch (e) {}
+    }
     await loadImages(); save(); $('#booksDlg').close(); step = 2; renderAll();
-    SF.toast('Book loaded. Add reference images if you like, then make the pictures.', 5000);
+    SF.toast(refs.length ? 'Book loaded with the three character reference images. Make the pictures.' : 'Book loaded. Add reference images if you like, then make the pictures.', 5200);
   }
   var impIn;
   async function newOne() {
