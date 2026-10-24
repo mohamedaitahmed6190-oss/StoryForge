@@ -474,6 +474,15 @@
     B = newBook(); step = 1; try { localStorage.setItem('sf_last', B.id); } catch (e) {}
     renderAll(); save(); SF.toast('Clean slate. Describe your new book.');
   }
+  async function importBook(obj) {
+    var d = obj && obj.format === 'storyforge-book' && obj.data;
+    if (!d || !Array.isArray(d.stories) || !Array.isArray(d.characters)) throw new Error('This is not a StoryForge book file.');
+    if (B.stories.length || B.idea) save();
+    B = Object.assign(newBook(), d, { id: 'b' + Date.now().toString(36) });
+    await loadImages(); save(); $('#booksDlg').close(); step = 2; renderAll();
+    SF.toast('Book loaded. Add reference images if you like, then make the pictures.', 5000);
+  }
+  var impIn;
   async function newOne() {
     if (B.stories.length || B.idea) save();
     B = newBook(); IM = {}; Object.keys(RF).forEach(function (k) { URL.revokeObjectURL(RF[k].url); }); RF = {}; $('#booksDlg').close(); step = 1; renderAll(); save();
@@ -519,6 +528,13 @@
     $$('#steps button').forEach(function (b) { b.onclick = function () { goto(+b.dataset.step); }; });
     $('#btnBack').onclick = function () { goto(step - 1); };
     $('#btnNext').onclick = function () { if (step === 1 && !B.stories.length) writeBook(); else goto(step + 1); };
+    $('#booksImport').onclick = function () {
+      if (!impIn) { impIn = document.createElement('input'); impIn.type = 'file'; impIn.accept = '.json,application/json'; impIn.onchange = function () { var f = impIn.files[0]; impIn.value = ''; if (!f) return; f.text().then(function (t) { return importBook(JSON.parse(t)); }).catch(function (e) { SF.toast(e.message || 'Could not read this file.', 5000); }); }; }
+      impIn.click();
+    };
+    $('#booksBook2').onclick = function () {
+      fetch('books/the-moonlight-map.json').then(function (r) { if (!r.ok) throw new Error('Book file not found.'); return r.json(); }).then(importBook).catch(function (e) { SF.toast(e.message || 'Could not load the book.', 5000); });
+    };
     $('#btnBooks').onclick = showBooks; $('#btnReset').onclick = startOver; $('#btnReset2').onclick = startOver; $('#booksClose').onclick = function () { $('#booksDlg').close(); }; $('#booksNew').onclick = newOne;
     $('#booksList').addEventListener('click', async function (e) {
       var b = e.target.closest('[data-act]'); if (!b) return;

@@ -1,0 +1,201 @@
+{
+ "format": "storyforge-book",
+ "version": 1,
+ "data": {
+  "id": "book2moon",
+  "idea": "Book 2 of The Lost Island series: Ben, Emma and Jack follow the glowing Moonlight Map to seven magical islands.",
+  "age": "6-12",
+  "nStories": 8,
+  "beats": 2,
+  "lang": "English",
+  "style": "3d",
+  "trim": "11x8.5",
+  "paper": "premium",
+  "bleed": true,
+  "aiNotice": true,
+  "author": "Mohamed Ait-Ahmed",
+  "year": 2026,
+  "title": "The Moonlight Map",
+  "subtitle": "Book 2 of The Lost Island Adventures",
+  "tagline": "Seven Lights. Seven islands. One big journey.",
+  "dedication": "For every brave explorer who follows the light.",
+  "characters": [
+   {
+    "name": "Ben",
+    "role": "ten-year-old brother, careful and brave",
+    "look": "ten-year-old boy, short curly dark-brown hair, light-brown skin, blue long-sleeve shirt, khaki shorts, brown hiking boots, olive-green backpack, brass compass on a cord"
+   },
+   {
+    "name": "Emma",
+    "role": "Ben's clever sister, great at riddles",
+    "look": "girl about eight, long wavy brown hair in a ponytail, fair skin, red t-shirt, khaki shorts, brown hiking boots, olive-green backpack"
+   },
+   {
+    "name": "Jack",
+    "role": "their loyal friend, funny and curious, keeps a notebook",
+    "look": "ten-year-old boy, tan explorer cap, short brown hair, green t-shirt, khaki shorts, brown boots, black backpack, small notebook in his pocket"
+   }
+  ],
+  "stories": [
+   {
+    "title": "The Moonlight Map",
+    "summary": "A silver message appears on the old map, but only under the full moon.",
+    "setting": "grandfather's attic at night, moonlight through a round window",
+    "lesson": "Curiosity opens new doors",
+    "beats": [
+     {
+      "text": "One night the full moon shone through the attic window, right onto the old map in Ben's hands. Slowly, silver lines began to glow in the empty corners.\n\"Look!\" Emma gasped. \"The map has a second secret!\"\nSeven tiny islands appeared, each one marked with a shining star. In the middle, three silver words floated up: Find the Lights.",
+      "scene": "Ben, Emma and Jack leaning over the old map on a wooden trunk in a dusty attic, silver glowing lines and seven star-marked islands rising from the paper, bright moonbeam from a round window, magical mood, wide angle"
+     },
+     {
+      "text": "At sunrise, the three friends packed sandwiches, a rope and Jack's notebook, and rowed their little boat out to sea. The glowing compass spun once, then pointed straight at the clouds.\n\"Up?\" Jack laughed. \"How do we sail up?\"\n\"Maybe the first island is already waiting for us,\" said Ben, smiling.",
+      "scene": "Ben, Emma and Jack in a small wooden rowing boat on a calm golden sunrise sea, Ben holding the glowing compass that points up to a cloud, packed bags in the boat, hopeful mood, wide shot"
+     }
+    ]
+   },
+   {
+    "title": "The Island in the Clouds",
+    "summary": "A floating island hides the first Light, guarded by a bridge that only holds friends who help each other.",
+    "setting": "a floating island above soft pink clouds",
+    "lesson": "Teamwork makes you strong",
+    "beats": [
+     {
+      "text": "A rope ladder of mist dropped from a fluffy cloud, and the friends climbed it carefully. At the top floated a green island with a glittering silver bridge.\n\"Only one can cross at a time,\" read Jack from a sign.\nBen stepped forward. The bridge shook, and a cold wind pushed him back.",
+      "scene": "Ben, Emma and Jack at the edge of a floating green island above pink clouds, a thin glittering silver bridge ahead, a wooden sign, wind blowing, Ben stepping back from the bridge, dreamy sky"
+     },
+     {
+      "text": "\"Wait,\" said Emma. \"The sign says only one can cross... but it doesn't say we can't hold hands!\"\nThey linked hands and stepped out together. The bridge grew wide and warm, and the clouds sang a soft song.\nOn the far side glowed the first Light, a tiny silver lantern. Jack tucked it safely in his backpack.",
+      "scene": "Ben, Emma and Jack holding hands and walking across a wide glowing silver bridge in the clouds, a small silver lantern shining on a stone at the far end, golden light, joyful mood"
+     }
+    ]
+   },
+   {
+    "title": "The Bay of Giant Turtles",
+    "summary": "Gentle sea giants are tangled in seaweed, and the friends must free them to earn the second Light.",
+    "setting": "a shining blue bay with giant friendly sea turtles",
+    "lesson": "Kindness is brave",
+    "beats": [
+     {
+      "text": "The compass led them to a calm blue bay. Suddenly, the water rose, and three giant turtles, each as big as a house, popped up from the waves.\n\"They are tangled in seaweed ropes!\" cried Emma.\n\"We have to help them,\" said Ben. The turtles' big, sad eyes looked at the children.",
+      "scene": "Ben, Emma and Jack in a little boat next to three enormous friendly sea turtles with kelp ropes wrapped around their shells, sparkling blue bay, sunlight on the water, gentle sad turtle eyes, wide shot"
+     },
+     {
+      "text": "Jack swam beside them and untied the knots, Emma pulled the ropes, and Ben guided the boat. One by one, the turtles swam free.\n\"Thank you,\" rumbled the biggest turtle in a deep, friendly voice. On its shell glowed the second Light, a pearl lantern.\n\"Kindness never goes unnoticed,\" Emma whispered happily.",
+      "scene": "Ben, Emma and Jack waving happily from their boat as the giant turtles swim freely, the biggest turtle with a glowing pearl lantern on its shell, bright blue water, joyful ending, golden light"
+     }
+    ]
+   },
+   {
+    "title": "The Crystal Cave of Echoes",
+    "summary": "In a dark cave full of echoes, Ben must face his fear to find the third Light.",
+    "setting": "a glittering crystal cave with echoing pools",
+    "lesson": "Courage grows when you face fear",
+    "beats": [
+     {
+      "text": "The third island had a cave that sparkled with purple and blue crystals. Every word the children spoke came back as an echo.\n\"Hello!\" shouted Jack. \"Hello... hello... hello...\"\nDeeper inside, the path turned pitch black. Ben's hands began to shake. \"I don't like the dark,\" he admitted quietly.",
+      "scene": "Ben, Emma and Jack at the entrance of a sparkling purple and blue crystal cave, light fading into darkness deeper inside, Ben looking nervous, Emma and Jack beside him, magical mood"
+     },
+     {
+      "text": "\"You don't have to be brave alone,\" said Emma, taking his hand. Jack held up his tiny flashlight.\nBen took a deep breath and called, \"I am not afraid!\" The echo answered, \"Not afraid... not afraid...\" and all the crystals lit up like stars.\nIn the middle of the cave glowed the third Light.",
+      "scene": "Ben standing proudly in the middle of a cave as hundreds of crystals glow bright around him, Emma and Jack smiling beside him, a small glowing lantern on a crystal pedestal, warm light"
+     }
+    ]
+   },
+   {
+    "title": "The Jungle of Talking Parrots",
+    "summary": "Colourful parrots repeat everything, and only the honest answer opens the path to the fourth Light.",
+    "setting": "a bright green jungle full of colourful parrots",
+    "lesson": "Honesty finds the way",
+    "beats": [
+     {
+      "text": "In the jungle, hundreds of parrots in every colour sat on the branches and copied every word the children said.\n\"Which way?\" asked Jack. \"Which way? Which way?\" squawked the parrots.\nA stone gate blocked the path. The riddle on it said: Tell me a truth that you are afraid to say.",
+      "scene": "Ben, Emma and Jack in a lush green jungle with hundreds of colourful parrots on the branches, a mossy stone gate with carved words in front of them, bright rays of sunlight, curious faces"
+     },
+     {
+      "text": "Jack looked down. \"I broke Ben's compass strap last week,\" he said. \"I was scared to tell you. I'm sorry.\"\nBen smiled. \"Thanks for telling me. I'm not mad at all.\"\nThe parrots stayed quiet, and the gate swung open. Behind it, the fourth Light hung from a vine, glowing softly.",
+      "scene": "Jack looking honest and a little sorry while Ben smiles kindly at him, Emma beside them, the stone gate opening to reveal a glowing lantern hanging from a vine, quiet parrots watching, warm light"
+     }
+    ]
+   },
+   {
+    "title": "The Icy Isle and the Sleeping Dragon",
+    "summary": "A little dragon sleeps on a snowy island, and the friends must be very quiet to find the fifth Light.",
+    "setting": "a snowy island with sparkling ice and a sleeping baby dragon",
+    "lesson": "Gentle hearts calm big fears",
+    "beats": [
+     {
+      "text": "The fifth island was covered in sparkling snow. In the middle, curled around a glowing lantern, slept a baby dragon as big as a bus.\n\"Shhh,\" whispered Emma. \"We must be very quiet.\"\nBut Jack's boot slipped on the ice, and CRACK! The dragon opened one golden eye.",
+      "scene": "Ben, Emma and Jack tiptoeing on a snowy island toward a large baby dragon curled around a glowing lantern, the dragon opening one golden eye, Jack slipping on the ice, snowflakes in the air, tense but funny mood"
+     },
+     {
+      "text": "The dragon sneezed a little cloud of smoke. It wasn't angry, it was lonely and scared.\n\"Hello,\" said Ben softly, holding out his sandwich. \"Do you want to share?\"\nThe dragon gobbled it happily and nuzzled the children. It pushed the fifth Light toward them with its nose.",
+      "scene": "Ben holding out a sandwich to a friendly baby dragon while Emma and Jack pet its nose, the glowing lantern in front of them, snow and ice shining, warm cozy mood"
+     }
+    ]
+   },
+   {
+    "title": "The Lighthouse of Lost Time",
+    "summary": "A tiny lighthouse on a stormy rock hides the sixth Light behind a riddle about time.",
+    "setting": "a small lighthouse on a rocky island in gentle rain",
+    "lesson": "Patience solves hard puzzles",
+    "beats": [
+     {
+      "text": "Rain tapped on the tiny lighthouse as the friends climbed inside. A giant clock on the wall had no hands, and a note said: Set the time when the brave and the kind arrive.\n\"What time is that?\" asked Jack.\n\"Maybe it isn't a number,\" said Ben, tapping the clock slowly.",
+      "scene": "Ben, Emma and Jack inside a cozy old lighthouse room looking at a giant clock without hands, a rolled note on a table, warm lamplight, rain on the window, thoughtful faces"
+     },
+     {
+      "text": "Emma smiled. \"Time to be together!\" She placed the three silver lanterns on the clock. The hands appeared and began to spin.\nThe lighthouse lamp turned on, and the sixth Light rose from the clock, shining bright. Outside, the rain stopped, and a rainbow appeared.",
+      "scene": "Emma placing glowing silver lanterns on a giant clock as golden clock hands appear and spin, Ben and Jack cheering beside her, the room filled with warm light, a rainbow outside the window"
+     }
+    ]
+   },
+   {
+    "title": "The Island of Lights",
+    "summary": "The last Light shows how the Lost Island first appeared, and what every Light really means.",
+    "setting": "a magical island glowing with thousands of floating lights at night",
+    "lesson": "Kindness lights the way",
+    "beats": [
+     {
+      "text": "The seventh island glowed like a sky full of fireflies. Thousands of tiny lights floated above a calm lake. In the middle stood a stone table with seven empty holes.\nThe friends placed their six lanterns in the holes. The seventh stayed empty.\n\"One more Light,\" said Jack. \"But where is it?\"",
+      "scene": "Ben, Emma and Jack standing at a stone table with six glowing lanterns on a night island, thousands of floating fireflies and soft lights above a calm lake, the seventh hole empty, magical mood"
+     },
+     {
+      "text": "Ben looked at his friends and smiled. \"Maybe the seventh Light isn't a lantern. Maybe it's us.\"\nTheir three hands glowed together, and the last hole filled with golden light. The map rose into the sky and shone like the moon.\n\"We found it,\" whispered Emma. \"The real treasure is being kind and brave together.\" Far away, a new island began to shine.",
+      "scene": "Ben, Emma and Jack holding hands glowing with golden light as the old map floats up into the starry sky like a moon, seven lanterns shining on the stone table, a faint new island glowing in the distance, wonder"
+     }
+    ]
+   }
+  ],
+  "cover": {
+   "prompt": "Ben, Emma and Jack on a small wooden boat at night under a huge glowing full moon, holding up a glowing silver map, seven shining lights on a chain of magical islands ahead, floating cloud island, turtles in the water, sparkling stars, magical adventure, calm dark sky area at the top"
+  },
+  "listing": {
+   "title": "The Moonlight Map",
+   "subtitle": "Book 2 of The Lost Island Adventures: 8 Magical Island Stories for Brave Young Explorers",
+   "description": "When the full moon shines on Grandfather's old map, a secret second layer appears: seven new islands, each guarded by a glowing Light.\n\nJoin Ben, Emma and Jack as they follow the moonlight and sail to a floating island in the clouds, free giant turtles in a sparkling bay, cross a crystal cave of echoes, answer the riddle of the talking parrots, meet a lonely baby dragon, solve the puzzle of a lighthouse without time, and discover the secret of the Island of Lights.\n\nEach of the eight stories has a puzzle to solve, lots of fun dialogue and a gentle lesson about teamwork, kindness, courage and honesty. Beautifully illustrated on every spread, this adventure picture book is perfect for read-aloud bedtime, for early readers, and for any child who loves maps, mysteries and magical islands.\n\nBook 2 of the Lost Island series. It can be enjoyed on its own.",
+   "back_cover": "The old map has a new secret. Under the full moon, seven glowing islands appear! Ben, Emma and Jack sail to the clouds, the sea and a cave full of echoes, and meet turtles, parrots and even a baby dragon. Can they find all seven Lights? Eight magical stories about teamwork, kindness and courage.",
+   "keywords": [
+    "adventure picture book for kids",
+    "island treasure map story",
+    "bedtime stories for kids 6-10",
+    "friendship and courage book",
+    "kids mystery puzzle story",
+    "read aloud adventure children",
+    "illustrated story book siblings"
+   ],
+   "categories": [
+    "Children's Books > Action & Adventure",
+    "Children's Books > Fairy Tales, Folk Tales & Myths > Fantasy & Magic",
+    "Children's Books > Literature & Fiction > Mysteries & Detectives"
+   ],
+   "reading_age": {
+    "min": 6,
+    "max": 12
+   },
+   "cover_prompt": "Ben, Emma and Jack on a small wooden boat at night under a huge glowing full moon, holding up a glowing silver map, seven shining lights on a chain of magical islands ahead, floating cloud island, turtles in the water, sparkling stars, magical adventure, calm dark sky area at the top"
+  },
+  "backColor": "#10243A",
+  "seeds": {},
+  "srcPx": 1024
+ }
+}
