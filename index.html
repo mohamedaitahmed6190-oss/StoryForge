@@ -219,6 +219,7 @@ dialog .btns{justify-content:flex-end;margin-bottom:0}
   <section class="panel" id="p2">
     <h2>Check the story</h2>
     <p class="lead">Everything is editable. Each character's look (and reference image, if you add one) is repeated in every picture, so they stay the same.</p>
+    <div class="chk"><input type="checkbox" class="cpOpt" id="cpOpt2" checked><label for="cpOpt2"><b>Add a picture prompt with the KDP size when I copy a page</b><div class="hint">So ChatGPT or any other tool makes the picture in the right shape.</div></label></div>
     <div class="prog" id="gen"><div class="t"><span id="genT">Starting…</span><button class="btn ghost sm" id="genStop">Stop</button></div><div class="b"><i id="genB"></i></div></div>
     <div id="ipBox"></div>
     <div id="bookForm">
@@ -240,6 +241,7 @@ dialog .btns{justify-content:flex-end;margin-bottom:0}
     <p class="lead" id="picInfo"></p>
     <div class="btns"><button class="btn red" id="btnAllPics">Make all missing pictures</button><button class="btn ghost" id="btnStopPics" hidden>Stop</button></div>
     <div class="field"><label>When I upload my own picture</label><div class="seg" role="radiogroup"><label><input type="radio" name="upfit" value="fill" checked><span>Fill the page</span></label><label><input type="radio" name="upfit" value="whole"><span>Show the whole picture</span></label></div><div class="hint">Either way the picture is cut and resized to the exact KDP page (bleed included) at 300 DPI.</div></div>
+    <div class="chk"><input type="checkbox" class="cpOpt" id="cpOpt3" checked><label for="cpOpt3"><b>Add a picture prompt with the KDP size when I copy a page</b><div class="hint">So ChatGPT or any other tool makes the picture in the right shape.</div></label></div>
     <div class="prog" id="pgen"><div class="t"><span id="pgenT"></span></div><div class="b"><i id="pgenB"></i></div></div>
     <h3 style="margin-top:26px">Cover</h3>
     <div class="coverbox"><div class="im" id="coverIm" data-img="cover"></div>
@@ -275,6 +277,6 @@ dialog .btns{justify-content:flex-end;margin-bottom:0}
 
 <script src="app3.js?v=2"></script>
 <script src="app2.js?v=3"></script>
-<script src="app1.js?v=15"></script>
+<script src="app1.js?v=16"></script>
 </body>
 </html>
