@@ -132,7 +132,15 @@
     goto(2); await runGen();
   }
 
-  /* ---------- step 2: story generation ---------- */
+  function copyText(t, msg) {
+    function fb() {
+      var ta = document.createElement('textarea'); ta.value = t; ta.setAttribute('readonly', ''); ta.style.cssText = 'position:fixed;left:-9999px;top:0';
+      document.body.appendChild(ta); ta.select(); var ok = false; try { ok = document.execCommand('copy'); } catch (e) {} ta.remove();
+      SF.toast(ok ? msg : 'Could not copy. Select the text and copy it by hand.');
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(function () { SF.toast(msg); }, fb); else fb();
+  }
+  function beatText(i, j) { return String(B.stories[i].beats[j].text || '').trim(); }
   function showGen(on, text, frac) {
     var g = $('#gen'); g.classList.toggle('on', on);
     if (text) $('#genT').textContent = text;
@@ -221,11 +229,12 @@
     $('#stories').innerHTML = B.stories.map(function (s, i) {
       var beats = (s.beats || []).map(function (b, j) {
         return '<div class="beat"><small>Page text ' + (j + 1) + '</small><textarea data-s="' + i + '" data-b="' + j + '" data-f="text">' + esc(b.text) + '</textarea>' +
+          '<button type="button" class="btn sm ghost" data-act="copybeat" data-s="' + i + '" data-b="' + j + '">Copy this page text</button>' +
           '<small>What the picture shows</small><textarea class="sc" data-s="' + i + '" data-b="' + j + '" data-f="scene">' + esc(b.scene) + '</textarea></div>';
       }).join('');
       return '<div class="story" style="--c:' + SF.storyColor(i) + '"><div class="sh"><input type="text" data-s="' + i + '" data-f="title" value="' + esc(s.title) + '" aria-label="Story ' + (i + 1) + ' title" maxlength="80"></div>' +
         '<p class="sum">' + esc(s.summary) + '</p>' + (beats || '<p class="hint" style="margin-left:8px">This story has no text yet.</p>') +
-        '<div class="sp-a"><button class="btn sm ghost" data-act="rewrite" data-s="' + i + '">' + (beats ? 'Rewrite this story' : 'Write this story') + '</button></div></div>';
+        '<div class="sp-a"><button class="btn sm ghost" data-act="rewrite" data-s="' + i + '">' + (beats ? 'Rewrite this story' : 'Write this story') + '</button>' + (beats ? '<button class="btn sm ghost" data-act="copystory" data-s="' + i + '">Copy the whole story</button>' : '') + '</div></div>';
     }).join('');
     paintIp();
   }
@@ -351,6 +360,7 @@
         return '<div class="spread"><div class="pg"><p>' + esc(b.text) + '</p></div><div class="im" data-img="' + key + '"></div></div>' +
           '<div class="sp-a"><button class="btn sm" data-act="gen" data-key="' + key + '">' + (IM[key] ? 'New picture' : 'Make picture') + '</button>' +
           '<button class="btn sm ghost" data-act="up" data-key="' + key + '">Upload my picture</button>' +
+          '<button class="btn sm ghost" data-act="copy" data-s="' + i + '" data-b="' + j + '">Copy text</button>' +
           '<button class="btn sm ghost" data-act="dl" data-key="' + key + '"' + (IM[key] ? '' : ' disabled') + '>Save image</button>' +
           '<button class="btn sm ghost danger" data-act="del" data-key="' + key + '"' + (IM[key] ? '' : ' disabled') + '>Delete picture</button></div>' +
           '<details style="margin:-6px 0 8px"><summary class="hint" style="cursor:pointer">Edit the scene</summary><textarea class="sc" rows="3" data-s="' + i + '" data-b="' + j + '" data-f="scene" style="margin-top:6px">' + esc(b.scene) + '</textarea></details>';
@@ -561,6 +571,8 @@
     $('#bookForm').addEventListener('input', onStoryInput);
     $('#p2').addEventListener('click', function (e) {
       var b = e.target.closest('[data-act=rewrite]'); if (b) rewrite(+b.dataset.s);
+      var cb = e.target.closest('[data-act=copybeat]'); if (cb) copyText(beatText(+cb.dataset.s, +cb.dataset.b), 'Page text copied.');
+      var cs = e.target.closest('[data-act=copystory]'); if (cs) { var si = +cs.dataset.s; copyText(B.stories[si].title + '\n\n' + B.stories[si].beats.map(function (x, j) { return beatText(si, j); }).join('\n\n'), 'Story copied.'); }
       var p = e.target.closest('[data-act=ref]'), d = e.target.closest('[data-act=refdel]');
       if (d) delRef(+d.dataset.c);
       var cr = e.target.closest('[data-act=cleanref]'); if (cr) cleanRef(+cr.dataset.c);
@@ -570,6 +582,7 @@
     $('#spreads').addEventListener('click', function (e) {
       var b = e.target.closest('[data-act]'); if (!b) return; var k = b.dataset.key;
       if (b.dataset.act === 'gen') { B.seeds[k] = 1 + Math.floor(Math.random() * 2000000000); runPics([k]).then(renderPics); }
+      if (b.dataset.act === 'copy') copyText(beatText(+b.dataset.s, +b.dataset.b), 'Page text copied.');
       if (b.dataset.act === 'up') pickUpload(k);
       if (b.dataset.act === 'del') delPic(k);
       if (b.dataset.act === 'dl' && IM[k]) SF.download(IM[k].blob, SF.slug(B.title) + '-' + k + '.jpg', 'image/jpeg');
