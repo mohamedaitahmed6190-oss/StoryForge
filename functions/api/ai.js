@@ -86,6 +86,9 @@ const AGE = {
 const clip = (v, n) => String(v ?? '').slice(0, n);
 const num = (v, d, lo, hi) => Math.min(hi, Math.max(lo, parseInt(v, 10) || d));
 
+const IP_RULE = `Originality rule: use ONLY original, invented names for characters, places, creatures, objects and the book title. Never use or imitate any trademarked, copyrighted or famous name, brand, film, game, cartoon, book, song, catchphrase or celebrity (for example no Disney, Pixar, Marvel, Pokemon, Nintendo, Harry Potter, Star Wars, Lego, Barbie, Minecraft, Paw Patrol, Dr. Seuss, no real brands or sports teams). Do not copy plots of famous stories. Everything must feel new and original.`;
+const avoidLine = b => (Array.isArray(b.avoid) && b.avoid.length) ? `\nDo NOT use these words or anything like them: ${b.avoid.slice(0, 12).map(w => clip(w, 30)).join(', ')}.` : '';
+
 function outlinePrompt(b) {
   const n = num(b.stories, 7, 1, 12), a = AGE[b.age] || AGE['6-8'];
   return `Create the plan for an illustrated children's story book.
@@ -99,10 +102,11 @@ Return this JSON shape:
  "subtitle": "subtitle that says what the book is (max 90 chars)",
  "tagline": "one-line hook",
  "dedication": "short warm dedication line",
- "characters": [ { "name": "first name only", "role": "who they are", "look": "fixed visual description for the illustrator: age, hair, skin tone, outfit with colours, one accessory (max 25 words)" } ],
+ "characters": [ { "name": "first name only", "role": "who they are", "look": "FIXED visual description for the illustrator, the same in every picture: age, skin tone, hair colour and style, ONE specific outfit (top, bottoms, shoes, each with a colour) that never changes, one accessory (max 35 words)" } ],
  "stories": [ { "title": "story title", "summary": "2 sentences: what happens and how it ends", "setting": "where it happens, visually", "lesson": "gentle lesson in 5-8 words" } ]
 }
-Rules: 2 to 4 characters, each with a DIFFERENT first name; "stories" has exactly ${n} items; use character names exactly as written in "characters" everywhere; never invent extra named characters inside "stories".`;
+Rules: 2 to 4 characters, each with a DIFFERENT first name; "stories" has exactly ${n} items; use character names exactly as written in "characters" everywhere; never invent extra named characters inside "stories".
+${IP_RULE}${avoidLine(b)}`;
 }
 
 function storyPrompt(b) {
@@ -122,8 +126,9 @@ ${b.prevSummary ? `Previous story ended with: ${clip(b.prevSummary, 300)}\n` : '
 Write exactly ${beats} page-beats. Each beat is the text of ONE book page, ${a.words} words, with at least one line of spoken dialogue in double quotes placed on its own line. Beat 1 opens with a hook; the last beat resolves the story warmly (and may hint at the next adventure).
 
 Return this JSON shape:
-{ "pages": [ { "text": "page text; separate paragraphs with \\n", "scene": "what the illustration shows: place, action, which characters by name, lighting, camera angle (25-45 words, no text or letters in the picture)" } ] }
-"pages" has exactly ${beats} items.`;
+{ "pages": [ { "text": "page text; separate paragraphs with \\n", "scene": "what the illustration shows: place, action, which characters by name, lighting, camera angle (25-45 words, no text or letters in the picture). Never describe or change the characters' clothes or hair, their looks are added automatically" } ] }
+"pages" has exactly ${beats} items.
+${IP_RULE}${avoidLine(b)}`;
 }
 
 function listingPrompt(b) {
@@ -142,7 +147,8 @@ Return this JSON shape:
  "categories": ["3 KDP category paths such as Children's Books > Action & Adventure"],
  "reading_age": { "min": 6, "max": 9 },
  "cover_prompt": "illustration brief for the FRONT COVER picture: main characters by name in one dramatic scene, 30-50 words, no text or letters"
-}`;
+}
+${IP_RULE}${avoidLine(b)}`;
 }
 
 // ---------- handlers ----------

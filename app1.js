@@ -133,7 +133,12 @@
     genStop = false; $('#btnWrite').disabled = true;
     try {
       showGen(true, 'Planning your book…', 0.03);
-      var o = await api('outline', { idea: B.idea, age: B.age, lang: B.lang, stories: B.nStories });
+      var o, avoid = SF.ipHits(B.idea);
+      for (var t = 0; t < 3; t++) {
+        o = await api('outline', { idea: B.idea, age: B.age, lang: B.lang, stories: B.nStories, avoid: avoid });
+        var oh = SF.ipHits(JSON.stringify(o)).filter(function (w) { return SF.ipHits(B.idea).indexOf(w) < 0; });
+        if (!oh.length) break; avoid = avoid.concat(oh);
+      }
       var chars = (o.characters || []).filter(function (c) { return c && c.name; }).slice(0, 4).map(function (c) { return { name: clip(c.name, 30), role: clip(c.role, 80), look: clip(c.look, 220) }; });
       var sts = (o.stories || []).filter(function (s) { return s && s.title; }).slice(0, B.nStories);
       if (!chars.length || !sts.length) throw new Error('The AI returned an incomplete plan. Try again.');
@@ -157,8 +162,13 @@
   }
   async function writeStory(i) {
     var bible = { title: B.title, characters: B.characters, stories: B.stories.map(function (s) { return { title: s.title, summary: s.summary, setting: s.setting, lesson: s.lesson }; }) };
-    var d = await api('story', { bible: bible, index: i, beats: B.beats, age: B.age, lang: B.lang, prevSummary: i ? B.stories[i - 1].summary : '' });
-    var pg = (d.pages || []).filter(function (p) { return p && cleanText(p.text); }).slice(0, B.beats);
+    var d, pg, avoid = [];
+    for (var t = 0; t < 3; t++) {
+      d = await api('story', { bible: bible, index: i, beats: B.beats, age: B.age, lang: B.lang, prevSummary: i ? B.stories[i - 1].summary : '', avoid: avoid });
+      pg = (d.pages || []).filter(function (p) { return p && cleanText(p.text); }).slice(0, B.beats);
+      var hits = SF.ipHits(pg.map(function (p) { return p.text + ' ' + p.scene; }).join(' '));
+      if (!hits.length) break; avoid = avoid.concat(hits);
+    }
     if (!pg.length) throw new Error('empty story');
     while (pg.length < B.beats) pg.push({ text: pg[pg.length - 1].text, scene: pg[pg.length - 1].scene });
     B.stories[i].beats = pg.map(function (p) { return { text: cleanText(p.text), scene: clip(p.scene, 400) || (B.stories[i].setting + '. ' + B.stories[i].title) }; });
@@ -226,21 +236,25 @@
 
   /* ---------- step 3: pictures ---------- */
   function escRe(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+  var GROUP = /\b(kids|children|friends|trio|three|explorers|team|everyone|together|all of them|they)\b/i;
   function promptFor(key) {
-    var st = STYLES[B.style] || STYLES['3d'], scene, cast, extra;
-    if (key === 'cover') {
-      scene = B.cover.prompt; cast = B.characters.slice(0, 3);
-      extra = 'Book cover illustration, dramatic inviting composition, open sky or calm area in the upper third, no title text.';
-    } else {
+    var st = STYLES[B.style] || STYLES['3d'], scene, cast, extra, hay;
+    if (key === 'cover') { scene = B.cover.prompt; hay = scene; extra = 'Book cover illustration, dramatic inviting composition, open sky or calm area in the upper third, no title text.'; }
+    else {
       var m = /^s(\d+)b(\d+)$/.exec(key), b = B.stories[+m[1]].beats[+m[2]];
-      scene = b.scene; var hay = b.scene + ' ' + b.text;
-      cast = B.characters.filter(function (c) { return c.name && new RegExp('\\b' + escRe(c.name) + '\\b', 'i').test(hay); });
-      extra = 'Wide composition with the main subject centered and calm margins around it.';
+      scene = b.scene; hay = b.scene + ' ' + b.text; extra = 'Wide composition with the main subject centered and calm margins around it.';
     }
-    var looks = cast.map(function (c) { return c.name + ': ' + c.look + '.'; }).join(' ');
-    return (st.p + '. ' + scene + ' ' + (looks ? 'Characters, drawn exactly like this every time: ' + looks + ' ' : '') + extra + ' No text, no letters, no logos, no watermark, no frame.').slice(0, 1100);
+    cast = B.characters.filter(function (c) { return c.name && new RegExp('\\b' + escRe(c.name) + '\\b', 'i').test(hay); });
+    if ((!cast.length || GROUP.test(scene)) && B.characters.length) cast = B.characters.slice(0, 3);
+    var looks = cast.map(function (c) { return c.name + ' = ' + c.look + '.'; }).join(' ');
+    var lock = looks ? 'CHARACTERS (identical in every picture of this book: same face, same hair, same exact outfit and colours, never change clothes): ' + looks + ' ' : '';
+    return (lock + 'SCENE: ' + scene + ' STYLE: ' + st.p + '. ' + extra + ' No text, no letters, no logos, no watermark, no frame.').slice(0, 1400);
   }
-  function seedFor(key) { if (!B.seeds[key]) B.seeds[key] = 1 + Math.floor(Math.random() * 2000000000); return B.seeds[key]; }
+  function seedFor(key) {                       // one shared seed per book keeps faces and outfits consistent; "New picture" sets its own
+    if (B.seeds[key]) return B.seeds[key];
+    if (!B.seeds.base) B.seeds.base = 1 + Math.floor(Math.random() * 2000000000);
+    return B.seeds.base;
+  }
   function paintImage(key) {
     $$('[data-img="' + key + '"]').forEach(function (el) {
       el.classList.toggle('busy', !!BUSY[key]);
