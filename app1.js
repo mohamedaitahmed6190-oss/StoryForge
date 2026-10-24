@@ -22,7 +22,7 @@
   function newBook() {
     return { id: 'b' + Date.now().toString(36), idea: '', age: '6-8', nStories: 7, beats: 2, lang: 'English', style: '3d', trim: '8.5x8.5', paper: 'premium',
       bleed: true, aiNotice: true, author: '', cast: '', year: new Date().getFullYear(), title: '', subtitle: '', tagline: '', dedication: '',
-      characters: [], stories: [], cover: { prompt: '' }, listing: null, backColor: '#16213E', seeds: {}, srcPx: 1024 };
+      characters: [], stories: [], cover: { prompt: '' }, listing: null, backColor: '#16213E', seeds: {}, srcPx: 1024, upPx: {} };
   }
   function sfBook() {                          // the shape app2.js expects
     var b = Object.assign({}, B); b.backCover = B.listing && B.listing.back_cover || ''; return b;
@@ -343,13 +343,14 @@
   function renderPics() {
     var keys = imageKeys(), have = keys.filter(function (k) { return IM[k]; }).length;
     coverFallback(); $('#coverPrompt').value = B.cover.prompt;
-    $('#picInfo').textContent = B.stories.length ? have + ' of ' + keys.length + ' pictures ready. Each picture takes about 10 seconds. Left page is the text, right page is the picture.' : 'Write your story first (step 1).';
+    $('#picInfo').textContent = B.stories.length ? have + ' of ' + keys.length + ' pictures ready. Each picture takes about 10 seconds. Left page is the text, right page is the picture. You can also upload your own picture for any page (only use pictures you have the right to use).' : 'Write your story first (step 1).';
     $('#btnAllPics').disabled = !B.stories.length;
     $('#spreads').innerHTML = B.stories.map(function (s, i) {
       return '<div class="sp-h" style="--c:' + SF.storyColor(i) + '"><h3>' + (i + 1) + '  ' + esc(s.title) + '</h3></div>' + (s.beats || []).map(function (b, j) {
         var key = 's' + i + 'b' + j;
         return '<div class="spread"><div class="pg"><p>' + esc(b.text) + '</p></div><div class="im" data-img="' + key + '"></div></div>' +
           '<div class="sp-a"><button class="btn sm" data-act="gen" data-key="' + key + '">' + (IM[key] ? 'New picture' : 'Make picture') + '</button>' +
+          '<button class="btn sm ghost" data-act="up" data-key="' + key + '">Upload my picture</button>' +
           '<button class="btn sm ghost" data-act="dl" data-key="' + key + '"' + (IM[key] ? '' : ' disabled') + '>Save image</button></div>' +
           '<details style="margin:-6px 0 8px"><summary class="hint" style="cursor:pointer">Edit the scene</summary><textarea class="sc" rows="3" data-s="' + i + '" data-b="' + j + '" data-f="scene" style="margin-top:6px">' + esc(b.scene) + '</textarea></details>';
       }).join('');
@@ -380,10 +381,32 @@
         IM[key] = { blob: bl, url: URL.createObjectURL(bl) };
         await SF.store.putImg(B.id, key, bl); bump();
         if (key === 'cover') { try { B.backColor = await SF.avgColor(bl); } catch (e) {} }
-        try { var bm = await createImageBitmap(bl); B.srcPx = bm.width; } catch (e) {}
+        try { var bm = await createImageBitmap(bl); B.srcPx = bm.width; if (B.upPx) delete B.upPx[key]; } catch (e) {}
         save(); return;
       } catch (e) { if (e.fatal) throw e; if (a === 3) throw e; await SF.sleep(1500 * a); }
     }
+  }
+  var upKey = '', upIn;
+  async function useUpload(file) {
+    var key = upKey; if (!file || !key) return;
+    try {
+      var bm = await createImageBitmap(file), k = Math.min(1, 3500 / Math.max(bm.width, bm.height)), c = document.createElement('canvas');
+      c.width = Math.round(bm.width * k); c.height = Math.round(bm.height * k);
+      c.getContext('2d').drawImage(bm, 0, 0, c.width, c.height);
+      var bl = await new Promise(function (res, rej) { c.toBlob(function (b) { b ? res(b) : rej(new Error('Could not read the picture.')); }, 'image/jpeg', 0.92); });
+      if (IM[key]) URL.revokeObjectURL(IM[key].url);
+      IM[key] = { blob: bl, url: URL.createObjectURL(bl) };
+      await SF.store.putImg(B.id, key, bl);
+      B.upPx = B.upPx || {}; B.upPx[key] = c.width;
+      if (key === 'cover') { try { B.backColor = await SF.avgColor(bl); } catch (e) {} }
+      save(); renderPics();
+      SF.toast(c.width < 1500 ? 'Picture added, but it is small (' + c.width + ' px). It may look soft in print.' : 'Your picture is in place.', 4200);
+    } catch (e) { SF.toast(e.message || 'This file is not a picture.', 5000); }
+  }
+  function pickUpload(key) {
+    upKey = key;
+    if (!upIn) { upIn = document.createElement('input'); upIn.type = 'file'; upIn.accept = 'image/*'; upIn.onchange = function () { var f = upIn.files[0]; upIn.value = ''; useUpload(f); }; }
+    upIn.click();
   }
   async function runPics(keys) {
     if (picRun || !keys.length) return;
@@ -409,7 +432,7 @@
     var sb = sfBook(), pl = SF.makePlan(sb), ci = SF.coverInfo(sb, pl.total), keys = imageKeys();
     var have = keys.filter(function (k) { return IM[k]; }).length;
     $('#sumLine').innerHTML = '<span>' + pl.total + '<small>pages</small></span><span>' + have + '/' + keys.length + '<small>pictures</small></span><span>' + ci.spine.toFixed(3) + ' in<small>spine</small></span><span>' + ci.width.toFixed(3) + ' × ' + ci.height.toFixed(3) + ' in<small>cover with bleed</small></span>';
-    var stats = { images: { have: have, need: keys.length }, srcPx: have ? B.srcPx : 0, ipHits: SF.ipHits(allText()) };
+    var stats = { images: { have: have, need: keys.length }, srcPx: have ? Math.min.apply(null, [B.srcPx].concat(Object.keys(B.upPx || {}).filter(function (k) { return IM[k]; }).map(function (k) { return B.upPx[k]; }))) : 0, ipHits: SF.ipHits(allText()) };
     var ic = { ok: '✓', warn: '!', fail: '✕', info: 'i' };
     $('#checks').innerHTML = SF.runChecks(sb, stats).map(function (c) { return '<li><span class="i ' + c.level + '">' + ic[c.level] + '</span><span>' + esc(c.text) + '</span></li>'; }).join('');
     renderListing(); barStatus();
@@ -540,12 +563,14 @@
     $('#spreads').addEventListener('click', function (e) {
       var b = e.target.closest('[data-act]'); if (!b) return; var k = b.dataset.key;
       if (b.dataset.act === 'gen') { B.seeds[k] = 1 + Math.floor(Math.random() * 2000000000); runPics([k]).then(renderPics); }
+      if (b.dataset.act === 'up') pickUpload(k);
       if (b.dataset.act === 'dl' && IM[k]) SF.download(IM[k].blob, SF.slug(B.title) + '-' + k + '.jpg', 'image/jpeg');
     });
     $('#btnAllPics').onclick = function () { runPics(missing()); };
     $('#btnStopPics').onclick = function () { picStop = true; };
     $('#coverPrompt').addEventListener('input', function (e) { B.cover.prompt = e.target.value; save(); });
     $('#coverIm').addEventListener('click', function (e) { if (e.target.closest('.regen')) { B.seeds.cover = 1 + Math.floor(Math.random() * 2000000000); runPics(['cover']).then(renderPics); } });
+    $('#coverUp').onclick = function () { pickUpload('cover'); };
     $('#coverGo').onclick = function () { B.seeds.cover = 1 + Math.floor(Math.random() * 2000000000); runPics(['cover']).then(renderPics); };
     $('#btnInterior').onclick = function () { exportPdf('interior'); };
     $('#btnCover').onclick = function () { exportPdf('cover'); };
