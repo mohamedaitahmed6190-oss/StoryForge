@@ -80,6 +80,7 @@ const SYS = 'You are an award-winning children\'s picture-book author and a Kind
 const AGE = {
   '3-5':  { words: '25-40',  note: 'very simple words, short sentences, repetition and gentle sounds' },
   '6-8':  { words: '45-70',  note: 'simple sentences, lively dialogue, small cliffhangers between beats' },
+  '6-12': { words: '55-90', note: 'clear, lively language that a 6-year-old can follow and a 12-year-old still enjoys: simple sentences with some richer words, humour, real dialogue and gentle suspense' },
   '9-12': { words: '70-110', note: 'richer vocabulary, humour, stronger suspense and emotion' },
 };
 

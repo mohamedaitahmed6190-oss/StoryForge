@@ -128,7 +128,7 @@
     var light = await doc.embedFont(await deps.loadFont('nunito-400'), { subset: true });
     doc.setTitle(book.title || 'Untitled'); doc.setAuthor(book.author || ''); doc.setProducer('StoryForge'); doc.setCreator('StoryForge');
     var ink = hex(P, INK), soft = hex(P, SOFT);
-    var ageMax = { '3-5': 30, '6-8': 24, '9-12': 20 }[book.age] || 24;
+    var ageMax = { '3-5': 30, '6-8': 24, '9-12': 20, '6-12': 22 }[book.age] || 24;
     var tocMap = {}; plan.tocs.forEach(function (t) { tocMap[t.story] = t.page; });
 
     for (var i = 0; i < n; i++) {
