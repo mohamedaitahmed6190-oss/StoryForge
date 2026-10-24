@@ -141,22 +141,13 @@
     if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(function () { SF.toast(msg); }, fb); else fb();
   }
   function wantPrompt() { try { return localStorage.getItem('sf_cp') !== '0'; } catch (e) { return true; } }
-  function extPrompt(i, j) {                     // prompt for ChatGPT or any other picture tool, with the exact KDP size
-    var b = B.stories[i].beats[j], hay = b.scene + ' ' + b.text, st = STYLES[B.style] || STYLES['3d'];
-    var cast = B.characters.filter(function (c) { return c.name && new RegExp('\\b' + escRe(c.name) + '\\b', 'i').test(hay); });
-    if ((!cast.length || GROUP.test(b.scene)) && B.characters.length) cast = B.characters.slice(0, 3);
-    var P = pageSize(), t = SF.trim(B.trim), bl = B.bleed === false ? 0 : SF.BLEED, wi = (t.w + bl).toFixed(3), hi = (t.h + 2 * bl).toFixed(3), r = P.ratio;
-    var presets = [[1, 'square 1:1 (1024 x 1024)'], [1.5, 'landscape 3:2 (1536 x 1024)'], [2 / 3, 'portrait 2:3 (1024 x 1536)']];
-    presets.sort(function (a, c) { return Math.abs(Math.log(a[0] / r)) - Math.abs(Math.log(c[0] / r)); });
-    var looks = cast.map(function (c) { return c.name + ' = ' + c.look; }).join('. ');
-    return 'Children\'s picture-book illustration. Scene: ' + b.scene + ' ' + (looks ? 'Characters (keep their face, hair and outfit identical in every picture): ' + looks + '. ' : '') +
-      'Style: ' + st.p + '. No text, no letters, no logos, no watermark, no frame.\n' +
-      'PICTURE SIZE: aspect ratio ' + r.toFixed(3) + ':1, which is ' + wi + ' x ' + hi + ' inches (' + P.W + ' x ' + P.H + ' px at 300 DPI) for Amazon KDP. ' +
-      'If you can only pick a preset, use ' + presets[0][1] + '. Keep the main subject in the centre and leave a calm margin around the edges.';
+  function sizeLine() {                          // only the KDP picture size, no scene or characters
+    var P = pageSize(), t = SF.trim(B.trim), bl = B.bleed === false ? 0 : SF.BLEED;
+    return 'PICTURE SIZE: aspect ratio ' + P.ratio.toFixed(3) + ':1, which is ' + (t.w + bl).toFixed(3) + ' x ' + (t.h + 2 * bl).toFixed(3) + ' inches (' + P.W + ' x ' + P.H + ' px at 300 DPI) for Amazon KDP';
   }
   function copyPage(i, j) {
-    var t = beatText(i, j);
-    copyText(wantPrompt() ? t + '\n\n---\nPROMPT FOR THE PICTURE:\n' + extPrompt(i, j) : t, wantPrompt() ? 'Page text and picture prompt copied.' : 'Page text copied.');
+    var t = beatText(i, j), on = wantPrompt();
+    copyText(on ? t + '\n\n' + sizeLine() : t, on ? 'Page text and picture size copied.' : 'Page text copied.');
   }
   function beatText(i, j) { return String(B.stories[i].beats[j].text || '').trim(); }
   function showGen(on, text, frac) {
