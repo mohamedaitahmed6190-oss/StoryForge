@@ -22,7 +22,7 @@
   function newBook() {
     return { id: 'b' + Date.now().toString(36), idea: '', age: '6-8', nStories: 7, beats: 2, lang: 'English', style: '3d', trim: '8.5x8.5', paper: 'premium',
       bleed: true, aiNotice: true, author: '', cast: '', year: new Date().getFullYear(), title: '', subtitle: '', tagline: '', dedication: '',
-      characters: [], stories: [], cover: { prompt: '' }, listing: null, backColor: '#16213E', seeds: {}, srcPx: 1024, upPx: {} };
+      characters: [], stories: [], cover: { prompt: '' }, listing: null, backColor: '#16213E', seeds: {}, srcPx: 1024, upPx: {}, upFit: 'fill' };
   }
   function sfBook() {                          // the shape app2.js expects
     var b = Object.assign({}, B); b.backCover = B.listing && B.listing.back_cover || ''; return b;
@@ -351,6 +351,7 @@
   }
   function renderPics() {
     var keys = imageKeys(), have = keys.filter(function (k) { return IM[k]; }).length;
+    $$('input[name=upfit]').forEach(function (r) { r.checked = r.value === (B.upFit || 'fill'); });
     coverFallback(); $('#coverPrompt').value = B.cover.prompt; $('#coverDel').disabled = !IM.cover;
     $('#picInfo').textContent = B.stories.length ? have + ' of ' + keys.length + ' pictures ready. Each picture takes about 10 seconds. Left page is the text, right page is the picture. You can also upload your own picture for any page (only use pictures you have the right to use).' : 'Write your story first (step 1).';
     $('#btnAllPics').disabled = !B.stories.length;
@@ -404,20 +405,36 @@
     await SF.store.delImg(B.id, key).catch(function () {}); save(); renderPics(); SF.toast('Picture deleted.');
   }
   var upKey = '', upIn;
+  function pageSize() {                          // exact KDP page (with bleed) in 300 DPI pixels
+    var t = SF.trim(B.trim), bl = B.bleed === false ? 0 : SF.BLEED, w = t.w + bl, h = t.h + 2 * bl, k = Math.min(1, 3500 / (Math.max(w, h) * SF.DPI));
+    return { W: Math.round(w * SF.DPI * k), H: Math.round(h * SF.DPI * k), ratio: w / h };
+  }
   async function useUpload(file) {
     var key = upKey; if (!file || !key) return;
     try {
-      var bm = await createImageBitmap(file), k = Math.min(1, 3500 / Math.max(bm.width, bm.height)), c = document.createElement('canvas');
-      c.width = Math.round(bm.width * k); c.height = Math.round(bm.height * k);
-      c.getContext('2d').drawImage(bm, 0, 0, c.width, c.height);
+      var bm = await createImageBitmap(file), P = pageSize(), c = document.createElement('canvas'), x = c.getContext('2d'), eff;
+      c.width = P.W; c.height = P.H;
+      if ((B.upFit || 'fill') === 'whole') {       // whole picture on top of a soft blurred copy of itself
+        var kb = Math.max(P.W / bm.width, P.H / bm.height), bw = bm.width * kb, bh = bm.height * kb;
+        try { x.filter = 'blur(40px)'; } catch (e) {}
+        x.drawImage(bm, (P.W - bw) / 2, (P.H - bh) / 2, bw, bh); x.filter = 'none';
+        x.fillStyle = 'rgba(0,0,0,.18)'; x.fillRect(0, 0, P.W, P.H);
+        var kf = Math.min(P.W / bm.width, P.H / bm.height), fw = bm.width * kf, fh = bm.height * kf;
+        x.drawImage(bm, (P.W - fw) / 2, (P.H - fh) / 2, fw, fh); eff = Math.round(bm.width * P.W / fw);
+      } else {                                      // fill the page: crop to the page shape, keep the upper-middle of the picture
+        var sw = bm.width, sh = bm.height, sx = 0, sy = 0;
+        if (sw / sh > P.ratio) { sw = Math.round(sh * P.ratio); sx = Math.round((bm.width - sw) / 2); }
+        else { sh = Math.round(sw / P.ratio); sy = Math.round((bm.height - sh) * 0.4); }
+        x.drawImage(bm, sx, sy, sw, sh, 0, 0, P.W, P.H); eff = sw;
+      }
       var bl = await new Promise(function (res, rej) { c.toBlob(function (b) { b ? res(b) : rej(new Error('Could not read the picture.')); }, 'image/jpeg', 0.92); });
       if (IM[key]) URL.revokeObjectURL(IM[key].url);
       IM[key] = { blob: bl, url: URL.createObjectURL(bl) };
       await SF.store.putImg(B.id, key, bl);
-      B.upPx = B.upPx || {}; B.upPx[key] = c.width;
+      B.upPx = B.upPx || {}; B.upPx[key] = eff;
       if (key === 'cover') { try { B.backColor = await SF.avgColor(bl); } catch (e) {} }
       save(); renderPics();
-      SF.toast(c.width < 1500 ? 'Picture added, but it is small (' + c.width + ' px). It may look soft in print.' : 'Your picture is in place.', 4200);
+      SF.toast(eff < 1500 ? 'Picture fitted to the page, but the original is small (' + eff + ' px). It may look soft in print.' : 'Picture fitted to the KDP page size (' + P.W + ' × ' + P.H + ' px).', 4800);
     } catch (e) { SF.toast(e.message || 'This file is not a picture.', 5000); }
   }
   function pickUpload(key) {
@@ -587,6 +604,7 @@
       if (b.dataset.act === 'del') delPic(k);
       if (b.dataset.act === 'dl' && IM[k]) SF.download(IM[k].blob, SF.slug(B.title) + '-' + k + '.jpg', 'image/jpeg');
     });
+    $$('input[name=upfit]').forEach(function (r) { r.onchange = function () { B.upFit = r.value; save(); }; });
     $('#btnAllPics').onclick = function () { runPics(missing()); };
     $('#btnStopPics').onclick = function () { picStop = true; };
     $('#coverPrompt').addEventListener('input', function (e) { B.cover.prompt = e.target.value; save(); });

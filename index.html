@@ -239,6 +239,7 @@ dialog .btns{justify-content:flex-end;margin-bottom:0}
     <h2>Make the pictures</h2>
     <p class="lead" id="picInfo"></p>
     <div class="btns"><button class="btn red" id="btnAllPics">Make all missing pictures</button><button class="btn ghost" id="btnStopPics" hidden>Stop</button></div>
+    <div class="field"><label>When I upload my own picture</label><div class="seg" role="radiogroup"><label><input type="radio" name="upfit" value="fill" checked><span>Fill the page</span></label><label><input type="radio" name="upfit" value="whole"><span>Show the whole picture</span></label></div><div class="hint">Either way the picture is cut and resized to the exact KDP page (bleed included) at 300 DPI.</div></div>
     <div class="prog" id="pgen"><div class="t"><span id="pgenT"></span></div><div class="b"><i id="pgenB"></i></div></div>
     <h3 style="margin-top:26px">Cover</h3>
     <div class="coverbox"><div class="im" id="coverIm" data-img="cover"></div>
@@ -274,6 +275,6 @@ dialog .btns{justify-content:flex-end;margin-bottom:0}
 
 <script src="app3.js?v=2"></script>
 <script src="app2.js?v=3"></script>
-<script src="app1.js?v=14"></script>
+<script src="app1.js?v=15"></script>
 </body>
 </html>
