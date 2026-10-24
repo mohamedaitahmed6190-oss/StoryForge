@@ -280,6 +280,7 @@
     if (jb) page.drawImage(await doc.embedJpg(jb), { x: frontX, y: 0, width: fw, height: fh });
     else page.drawRectangle({ x: frontX, y: 0, width: fw, height: fh, color: hex(P, '#3A86FF') });
 
+    if (!book.coverHasTitle) {
     // title band on the front
     var fcx = frontX + (tw + b) / 2 - 0 , safeW = tw - 1.0 * IN, bandH = Math.min(3.0 * IN, fh * 0.34);
     page.drawRectangle({ x: frontX, y: H - bandH - 0, width: fw, height: bandH, color: navy, opacity: 0.78 });
@@ -292,6 +293,7 @@
     if (book.author) {
       page.drawRectangle({ x: frontX, y: 0, width: fw, height: b + 0.8 * IN, color: navy, opacity: 0.7 });
       drawCentered(P, page, dispB, book.author, 22, frontX + tw / 2, b + 0.3 * IN, white);
+    }
     }
 
     // back cover
