@@ -133,7 +133,7 @@ ${chars}
 Whole book plan:
 ${all}
 ${b.prevSummary ? `Previous story ended with: ${clip(b.prevSummary, 300)}\n` : ''}This story: "${clip(cur.title, 80)}" - ${clip(cur.summary, 300)} Setting: ${clip(cur.setting, 150)}. Lesson: ${clip(cur.lesson, 80)}.
-Write exactly ${beats} page-beats. Each beat is the text of ONE book page, ${a.words} words, with at least one line of spoken dialogue in double quotes placed on its own line. Beat 1 opens with a hook; the last beat resolves the story warmly (and may hint at the next adventure).
+Narrate in the third person and past tense (never "we" or "I"), and always call the characters by their exact names. Write exactly ${beats} page-beats. Each beat is the text of ONE book page, ${a.words} words, with at least one line of spoken dialogue in double quotes placed on its own line. Beat 1 opens with a hook; the last beat resolves the story warmly (and may hint at the next adventure).
 
 Return this JSON shape:
 { "pages": [ { "text": "page text; separate paragraphs with \\n", "scene": "what the illustration shows: place, action, which characters by name, lighting, camera angle (25-45 words, no text or letters in the picture). Never describe or change the characters' clothes or hair, their looks are added automatically" } ] }

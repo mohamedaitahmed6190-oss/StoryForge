@@ -216,7 +216,7 @@
       return '<div class="c"><button type="button" class="ref" data-act="ref" data-c="' + i + '" aria-label="Reference image for ' + esc(c.name) + '">' + (RF[i] ? '<img alt="" src="' + RF[i].url + '">' : 'Add reference image') + '</button>' +
         '<input type="text" data-c="' + i + '" data-f="name" value="' + esc(c.name) + '" aria-label="Character name" maxlength="30">' +
         '<textarea rows="3" data-c="' + i + '" data-f="look" aria-label="How ' + esc(c.name) + ' looks" maxlength="260">' + esc(c.look) + '</textarea>' +
-        (RF[i] ? '<div class="acts"><button type="button" class="btn sm ghost" data-act="ref" data-c="' + i + '">Change image</button><button type="button" class="btn sm ghost danger" data-act="refdel" data-c="' + i + '">Remove image</button></div>' : '') + '</div>';
+        (RF[i] ? '<div class="acts"><button type="button" class="btn sm ghost" data-act="ref" data-c="' + i + '">Change image</button><button type="button" class="btn sm" data-act="cleanref" data-c="' + i + '">Make a clean reference</button><button type="button" class="btn sm ghost danger" data-act="refdel" data-c="' + i + '">Remove image</button></div>' : '') + '</div>';
     }).join('');
     $('#stories').innerHTML = B.stories.map(function (s, i) {
       var beats = (s.beats || []).map(function (b, j) {
@@ -283,6 +283,24 @@
       SF.toast(ch.name + ' will be drawn from your image. Make the pictures again to see it.', 4800);
     } catch (e) { SF.toast(e.message || 'Could not use this image.', 5000); }
   }
+  async function cleanRef(i) {                   // turn the uploaded picture into a clean full-body model sheet, then use that as the reference
+    var ch = B.characters[i]; if (!ch || !RF[i]) return;
+    var btn = $('#chars [data-act=cleanref][data-c="' + i + '"]'); if (btn) { btn.disabled = true; btn.textContent = 'Painting…'; }
+    try {
+      if (count() >= DAILY_LIMIT) throw new Error('Daily picture limit reached.');
+      var st = STYLES[B.style] || STYLES['3d'], fd = new FormData();
+      fd.append('prompt', 'Character model sheet for a children\'s picture book. Draw ONLY the character ' + ch.name + ' from image 0: full body, standing straight, facing the camera with a gentle smile, relaxed arms, plain light-grey background, soft even lighting. Keep exactly the same face, hair, skin tone, age and outfit as image 0. ' + ch.look + '. STYLE: ' + st.p + '. One character only, no other people, no text, no watermark.');
+      fd.append('width', '768'); fd.append('height', '1024'); fd.append('seed', String(1 + Math.floor(Math.random() * 2000000000)));
+      fd.append('input_image_0', RF[i].blob, 'ref.jpg');
+      var r = await fetch('/api/ai?mode=ref', { method: 'POST', body: fd });
+      var ct = r.headers.get('content-type') || '';
+      if (!r.ok || ct.indexOf('image') < 0) { var j = null; try { j = await r.json(); } catch (e) {} throw new Error(apiErr(r, j)); }
+      var bl = await shrink(await r.blob()); bump();
+      URL.revokeObjectURL(RF[i].url); RF[i] = { blob: bl, url: URL.createObjectURL(bl) };
+      await SF.store.putImg(B.id, 'ref' + i, bl); renderStory();
+      SF.toast(ch.name + ' now has a clean reference. Not happy? Press it again or add another image.', 5200);
+    } catch (e) { if (btn) { btn.disabled = false; btn.textContent = 'Make a clean reference'; } SF.toast(e.message || 'Could not make the reference.', 5000); }
+  }
   async function delRef(i) {
     if (RF[i]) URL.revokeObjectURL(RF[i].url); delete RF[i];
     await SF.store.delImg(B.id, 'ref' + i).catch(function () {}); renderStory();
@@ -303,7 +321,7 @@
     var withRef = cast.filter(function (x) { return RF[x.i]; }).slice(0, 4), noRef = cast.filter(function (x) { return !RF[x.i]; });
     var tail = ' SCENE: ' + scene + ' STYLE: ' + st.p + '. ' + extra + ' No text, no letters, no logos, no watermark, no frame.', lock = '';
     if (withRef.length) {
-      lock = withRef.map(function (x, k) { return 'Image ' + k + ' is the character ' + x.c.name; }).join('. ') + '. Draw these characters in the scene exactly like their reference images: same face, same hair, same skin tone, same outfit and colours, never change clothes. ';
+      lock = withRef.map(function (x, k) { return 'Image ' + k + ' is the character ' + x.c.name; }).join('. ') + '. Draw these characters in the scene exactly like their reference images: same face, same hair, same skin tone, same age, same height and body proportions, same outfit and colours, never change clothes. All children are 8 to 10 years old with natural child proportions, not chibi or baby-like. ';
     }
     var looks = noRef.map(function (x) { return x.c.name + ' = ' + x.c.look + '.'; }).join(' ');
     if (looks) lock += 'CHARACTERS (identical in every picture: same face, same hair, same exact outfit and colours): ' + looks + ' ';
@@ -515,6 +533,7 @@
       var b = e.target.closest('[data-act=rewrite]'); if (b) rewrite(+b.dataset.s);
       var p = e.target.closest('[data-act=ref]'), d = e.target.closest('[data-act=refdel]');
       if (d) delRef(+d.dataset.c);
+      var cr = e.target.closest('[data-act=cleanref]'); if (cr) cleanRef(+cr.dataset.c);
       if (p) { refFor = +p.dataset.c; if (!refIn) { refIn = document.createElement('input'); refIn.type = 'file'; refIn.accept = 'image/*'; refIn.onchange = function () { var f = refIn.files[0]; refIn.value = ''; setRef(f); }; } refIn.click(); }
     });
     $('#spreads').addEventListener('input', onStoryInput);
