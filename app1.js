@@ -21,7 +21,7 @@
   /* ---------- book model ---------- */
   function newBook() {
     return { id: 'b' + Date.now().toString(36), idea: '', age: '6-8', nStories: 7, beats: 2, lang: 'English', style: '3d', trim: '8.5x8.5', paper: 'premium',
-      bleed: true, aiNotice: true, author: '', year: new Date().getFullYear(), title: '', subtitle: '', tagline: '', dedication: '',
+      bleed: true, aiNotice: true, author: '', cast: '', year: new Date().getFullYear(), title: '', subtitle: '', tagline: '', dedication: '',
       characters: [], stories: [], cover: { prompt: '' }, listing: null, backColor: '#16213E', seeds: {}, srcPx: 1024 };
   }
   function sfBook() {                          // the shape app2.js expects
@@ -94,7 +94,7 @@
     $('#paper').innerHTML = SF.PAPERS.map(function (p) { return '<option value="' + p.id + '">' + esc(p.label) + '</option>'; }).join('');
     $('#chips').innerHTML = EXAMPLES.map(function (e, i) { return '<button type="button" class="chip" data-i="' + i + '">' + esc(e) + '</button>'; }).join('');
   }
-  var FIELDS = { idea: 'idea', nStories: 'nStories', beats: 'beats', lang: 'lang', style: 'style', trim: 'trim', paper: 'paper', author: 'author' };
+  var FIELDS = { idea: 'idea', cast: 'cast', nStories: 'nStories', beats: 'beats', lang: 'lang', style: 'style', trim: 'trim', paper: 'paper', author: 'author' };
   function fillIdea() {
     Object.keys(FIELDS).forEach(function (id) { $('#' + id).value = B[FIELDS[id]]; });
     $('#bleed').checked = B.bleed !== false; $('#aiNotice').checked = !!B.aiNotice;
@@ -138,16 +138,28 @@
     if (text) $('#genT').textContent = text;
     if (frac != null) $('#genB').style.width = Math.round(frac * 100) + '%';
   }
+  function enforceCast(o, cast) {                // if the AI still renamed the characters, put the author's names back
+    var want = String(cast || '').split(/,|&|\band\b|\+|;/i).map(function (x) { return x.trim(); }).filter(Boolean).slice(0, 4);
+    if (!want.length || !o || !Array.isArray(o.characters)) return o;
+    var have = o.characters.map(function (c) { return String(c && c.name || '').trim(); });
+    var json = JSON.stringify(o);
+    want.forEach(function (w, i) {
+      if (have.some(function (h) { return h.toLowerCase() === w.toLowerCase(); }) || !have[i]) return;
+      json = json.replace(new RegExp('\\b' + escRe(have[i]) + '\\b', 'g'), w.replace(/"/g, ''));
+    });
+    try { return JSON.parse(json); } catch (e) { return o; }
+  }
   async function runGen() {
     genStop = false; $('#btnWrite').disabled = true;
     try {
       showGen(true, 'Planning your book…', 0.03);
       var o, avoid = SF.ipHits(B.idea);
       for (var t = 0; t < 3; t++) {
-        o = await api('outline', { idea: B.idea, age: B.age, lang: B.lang, stories: B.nStories, avoid: avoid });
+        o = await api('outline', { idea: B.idea, cast: B.cast, age: B.age, lang: B.lang, stories: B.nStories, avoid: avoid });
         var oh = SF.ipHits(JSON.stringify(o)).filter(function (w) { return SF.ipHits(B.idea).indexOf(w) < 0; });
         if (!oh.length) break; avoid = avoid.concat(oh);
       }
+      o = enforceCast(o, B.cast);
       var chars = (o.characters || []).filter(function (c) { return c && c.name; }).slice(0, 4).map(function (c) { return { name: clip(c.name, 30), role: clip(c.role, 80), look: clip(c.look, 260) }; });
       var sts = (o.stories || []).filter(function (s) { return s && s.title; }).slice(0, B.nStories);
       if (!chars.length || !sts.length) throw new Error('The AI returned an incomplete plan. Try again.');

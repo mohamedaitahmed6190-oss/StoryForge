@@ -91,6 +91,13 @@ const num = (v, d, lo, hi) => Math.min(hi, Math.max(lo, parseInt(v, 10) || d));
 const IP_RULE = `Originality rule: use ONLY original, invented names for characters, places, creatures, objects and the book title. Never use or imitate any trademarked, copyrighted or famous name, brand, film, game, cartoon, book, song, catchphrase or celebrity (for example no Disney, Pixar, Marvel, Pokemon, Nintendo, Harry Potter, Star Wars, Lego, Barbie, Minecraft, Paw Patrol, Dr. Seuss, no real brands or sports teams). Do not copy plots of famous stories. Everything must feel new and original.`;
 const avoidLine = b => (Array.isArray(b.avoid) && b.avoid.length) ? `\nDo NOT use these words or anything like them: ${b.avoid.slice(0, 12).map(w => clip(w, 30)).join(', ')}.` : '';
 
+const castLine = b => {
+  const names = clip(b.cast, 140).trim();
+  return names
+    ? `FIXED CAST (the author chose these): the main characters are named exactly: ${names}. Use EXACTLY these names, spelled exactly like this, and do not rename them or add other main characters. Keep any description of them that appears in the idea.`
+    : `If the author's idea already names any character, keep those exact names and descriptions. Invent new original names only when the idea gives none.`;
+};
+
 function outlinePrompt(b) {
   const n = num(b.stories, 7, 1, 12), a = AGE[b.age] || AGE['6-8'];
   return `Create the plan for an illustrated children's story book.
@@ -107,6 +114,7 @@ Return this JSON shape:
  "characters": [ { "name": "first name only", "role": "who they are", "look": "FIXED visual description for the illustrator, the same in every picture: age, skin tone, hair colour and style, ONE specific outfit (top, bottoms, shoes, each with a colour) that never changes, one accessory (max 35 words)" } ],
  "stories": [ { "title": "story title", "summary": "2 sentences: what happens and how it ends", "setting": "where it happens, visually", "lesson": "gentle lesson in 5-8 words" } ]
 }
+${castLine(b)}
 Rules: 2 to 4 characters, each with a DIFFERENT first name; "stories" has exactly ${n} items; use character names exactly as written in "characters" everywhere; never invent extra named characters inside "stories".
 ${IP_RULE}${avoidLine(b)}`;
 }
