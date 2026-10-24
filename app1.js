@@ -342,7 +342,7 @@
   }
   function renderPics() {
     var keys = imageKeys(), have = keys.filter(function (k) { return IM[k]; }).length;
-    coverFallback(); $('#coverPrompt').value = B.cover.prompt;
+    coverFallback(); $('#coverPrompt').value = B.cover.prompt; $('#coverDel').disabled = !IM.cover;
     $('#picInfo').textContent = B.stories.length ? have + ' of ' + keys.length + ' pictures ready. Each picture takes about 10 seconds. Left page is the text, right page is the picture. You can also upload your own picture for any page (only use pictures you have the right to use).' : 'Write your story first (step 1).';
     $('#btnAllPics').disabled = !B.stories.length;
     $('#spreads').innerHTML = B.stories.map(function (s, i) {
@@ -351,7 +351,8 @@
         return '<div class="spread"><div class="pg"><p>' + esc(b.text) + '</p></div><div class="im" data-img="' + key + '"></div></div>' +
           '<div class="sp-a"><button class="btn sm" data-act="gen" data-key="' + key + '">' + (IM[key] ? 'New picture' : 'Make picture') + '</button>' +
           '<button class="btn sm ghost" data-act="up" data-key="' + key + '">Upload my picture</button>' +
-          '<button class="btn sm ghost" data-act="dl" data-key="' + key + '"' + (IM[key] ? '' : ' disabled') + '>Save image</button></div>' +
+          '<button class="btn sm ghost" data-act="dl" data-key="' + key + '"' + (IM[key] ? '' : ' disabled') + '>Save image</button>' +
+          '<button class="btn sm ghost danger" data-act="del" data-key="' + key + '"' + (IM[key] ? '' : ' disabled') + '>Delete picture</button></div>' +
           '<details style="margin:-6px 0 8px"><summary class="hint" style="cursor:pointer">Edit the scene</summary><textarea class="sc" rows="3" data-s="' + i + '" data-b="' + j + '" data-f="scene" style="margin-top:6px">' + esc(b.scene) + '</textarea></details>';
       }).join('');
     }).join('');
@@ -385,6 +386,12 @@
         save(); return;
       } catch (e) { if (e.fatal) throw e; if (a === 3) throw e; await SF.sleep(1500 * a); }
     }
+  }
+  async function delPic(key) {
+    if (!IM[key]) return;
+    if (!(await SF.ask('Delete this picture?', 'The picture is removed from this page. You can make a new one or upload your own.', 'Delete', 'Keep'))) return;
+    URL.revokeObjectURL(IM[key].url); delete IM[key]; if (B.upPx) delete B.upPx[key];
+    await SF.store.delImg(B.id, key).catch(function () {}); save(); renderPics(); SF.toast('Picture deleted.');
   }
   var upKey = '', upIn;
   async function useUpload(file) {
@@ -564,12 +571,14 @@
       var b = e.target.closest('[data-act]'); if (!b) return; var k = b.dataset.key;
       if (b.dataset.act === 'gen') { B.seeds[k] = 1 + Math.floor(Math.random() * 2000000000); runPics([k]).then(renderPics); }
       if (b.dataset.act === 'up') pickUpload(k);
+      if (b.dataset.act === 'del') delPic(k);
       if (b.dataset.act === 'dl' && IM[k]) SF.download(IM[k].blob, SF.slug(B.title) + '-' + k + '.jpg', 'image/jpeg');
     });
     $('#btnAllPics').onclick = function () { runPics(missing()); };
     $('#btnStopPics').onclick = function () { picStop = true; };
     $('#coverPrompt').addEventListener('input', function (e) { B.cover.prompt = e.target.value; save(); });
     $('#coverIm').addEventListener('click', function (e) { if (e.target.closest('.regen')) { B.seeds.cover = 1 + Math.floor(Math.random() * 2000000000); runPics(['cover']).then(renderPics); } });
+    $('#coverDel').onclick = function () { delPic('cover'); };
     $('#coverUp').onclick = function () { pickUpload('cover'); };
     $('#coverGo').onclick = function () { B.seeds.cover = 1 + Math.floor(Math.random() * 2000000000); runPics(['cover']).then(renderPics); };
     $('#btnInterior').onclick = function () { exportPdf('interior'); };
