@@ -16,7 +16,7 @@
     'Two sisters and their dog shrink to the size of ants and explore the garden kingdom.',
     'A moon-lit train that visits one sleepy animal town every night.'
   ];
-  var B = null, IM = {}, step = 1, BUSY = {}, genStop = false, picStop = false, picRun = false, saveT, ipT;
+  var B = null, IM = {}, RF = {}, step = 1, BUSY = {}, genStop = false, picStop = false, picRun = false, saveT, ipT;
 
   /* ---------- book model ---------- */
   function newBook() {
@@ -41,16 +41,25 @@
   }
   function loadImages() {
     Object.keys(IM).forEach(function (k) { URL.revokeObjectURL(IM[k].url); }); IM = {};
-    return Promise.all(imageKeys().map(function (k) {
+    Object.keys(RF).forEach(function (k) { URL.revokeObjectURL(RF[k].url); }); RF = {};
+    var rk = B.characters.map(function (_, i) { return 'ref' + i; });
+    return Promise.all(rk.map(function (k, i) {
+      return SF.store.getImg(B.id, k).then(function (bl) { if (bl) RF[i] = { blob: bl, url: URL.createObjectURL(bl) }; }).catch(function () {});
+    }).concat(imageKeys().map(function (k) {
       return SF.store.getImg(B.id, k).then(function (bl) { if (bl) IM[k] = { blob: bl, url: URL.createObjectURL(bl) }; }).catch(function () {});
-    }));
+    })));
+  }
+  async function wipeImages() {
+    var ks = imageKeys().concat(B.characters.map(function (_, i) { return 'ref' + i; }));
+    await Promise.all(ks.map(function (k) { return SF.store.delImg(B.id, k).catch(function () {}); }));
+    Object.keys(RF).forEach(function (k) { URL.revokeObjectURL(RF[k].url); }); RF = {}; IM = {};
   }
 
   /* ---------- daily counter ---------- */
   function today() { return new Date().toISOString().slice(0, 10); }
   function count() { try { return parseInt(localStorage.getItem('sf_n_' + today()) || '0', 10); } catch (e) { return 0; } }
   function bump() { try { localStorage.setItem('sf_n_' + today(), String(count() + 1)); } catch (e) {} paintCounter(); }
-  function paintCounter() { $('#counter').textContent = count() + ' / ' + DAILY_LIMIT + ' pictures today'; }
+  function paintCounter() { var c = $('#counter'); c.textContent = count() + ' / ' + DAILY_LIMIT; c.title = 'Pictures made today (daily limit ' + DAILY_LIMIT + ')'; }
 
   /* ---------- API ---------- */
   function apiErr(r, j) {
@@ -118,7 +127,7 @@
     if (hits.length && !(await SF.ask('Protected names in your idea', 'Your idea mentions <b>' + esc(hits.join(', ')) + '</b>. KDP can reject books that use trademarked characters or brands. Use your own original names instead.', 'Write anyway', 'Edit idea'))) { $('#idea').focus(); return; }
     if (B.stories.some(function (s) { return s.beats && s.beats.length; })) {
       if (!(await SF.ask('Replace the current story?', 'This writes a new book and deletes the pictures you already made for this one.', 'Replace it', 'Keep it'))) return;
-      await Promise.all(imageKeys().map(function (k) { return SF.store.delImg(B.id, k); })); IM = {};
+      await wipeImages();
     }
     goto(2); await runGen();
   }
@@ -192,7 +201,10 @@
     $('#bookForm').hidden = !has; $('#storyEmpty').hidden = has;
     $('#bTitle').value = B.title; $('#bSub').value = B.subtitle; $('#bDed').value = B.dedication;
     $('#chars').innerHTML = B.characters.map(function (c, i) {
-      return '<div class="c"><input type="text" data-c="' + i + '" data-f="name" value="' + esc(c.name) + '" aria-label="Character name" maxlength="30"><textarea rows="3" data-c="' + i + '" data-f="look" aria-label="How ' + esc(c.name) + ' looks" maxlength="260">' + esc(c.look) + '</textarea><button type="button" class="btn sm ghost" data-act="photo" data-c="' + i + '">Use a photo as reference</button></div>';
+      return '<div class="c"><button type="button" class="ref" data-act="ref" data-c="' + i + '" aria-label="Reference image for ' + esc(c.name) + '">' + (RF[i] ? '<img alt="" src="' + RF[i].url + '">' : 'Add reference image') + '</button>' +
+        '<input type="text" data-c="' + i + '" data-f="name" value="' + esc(c.name) + '" aria-label="Character name" maxlength="30">' +
+        '<textarea rows="3" data-c="' + i + '" data-f="look" aria-label="How ' + esc(c.name) + ' looks" maxlength="260">' + esc(c.look) + '</textarea>' +
+        (RF[i] ? '<div class="acts"><button type="button" class="btn sm ghost" data-act="ref" data-c="' + i + '">Change image</button><button type="button" class="btn sm ghost danger" data-act="refdel" data-c="' + i + '">Remove image</button></div>' : '') + '</div>';
     }).join('');
     $('#stories').innerHTML = B.stories.map(function (s, i) {
       var beats = (s.beats || []).map(function (b, j) {
@@ -234,52 +246,58 @@
     showGen(false);
   }
 
-  /* ---------- reference photo for a character ---------- */
-  var photoFor = -1, photoIn;
-  function shrink(file) {
+  /* ---------- reference image for a character (used directly by the picture model) ---------- */
+  var refFor = -1, refIn;
+  function shrink(file) {                        // the picture model wants each reference under 512 x 512
     return new Promise(function (res, rej) {
       var im = new Image(), u = URL.createObjectURL(file);
       im.onload = function () {
-        var k = Math.min(1, 640 / Math.max(im.width, im.height)), c = document.createElement('canvas');
-        c.width = Math.round(im.width * k); c.height = Math.round(im.height * k);
+        var k = Math.min(1, 480 / Math.max(im.width, im.height)), c = document.createElement('canvas');
+        c.width = Math.max(64, Math.round(im.width * k)); c.height = Math.max(64, Math.round(im.height * k));
         c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); URL.revokeObjectURL(u);
-        res(c.toDataURL('image/jpeg', 0.82));
+        c.toBlob(function (bl) { bl ? res(bl) : rej(new Error('Could not read the image.')); }, 'image/jpeg', 0.9);
       };
       im.onerror = function () { URL.revokeObjectURL(u); rej(new Error('This file is not a picture.')); };
       im.src = u;
     });
   }
-  async function usePhoto(file) {
-    var i = photoFor, ch = B.characters[i]; if (!file || !ch) return;
-    var btn = $('#chars [data-act=photo][data-c="' + i + '"]'); if (btn) { btn.disabled = true; btn.textContent = 'Reading the photo…'; }
+  async function setRef(file) {
+    var i = refFor, ch = B.characters[i]; if (!file || !ch) return;
     try {
-      var data = await shrink(file);
-      genStop = false;
-      var d = await api('describe', { image: data }, 2);
-      ch.look = clip(d.look, 260); renderStory(); save();
-      SF.toast(ch.name + ' will now be drawn from your photo. Check the description, then make pictures.', 5200);
-    } catch (e) {
-      if (btn) { btn.disabled = false; btn.textContent = 'Use a photo as reference'; }
-      SF.toast(e.message || 'Could not read the photo.', 5000);
-    }
+      var bl = await shrink(file);
+      if (RF[i]) URL.revokeObjectURL(RF[i].url);
+      RF[i] = { blob: bl, url: URL.createObjectURL(bl) };
+      await SF.store.putImg(B.id, 'ref' + i, bl); renderStory();
+      SF.toast(ch.name + ' will be drawn from your image. Make the pictures again to see it.', 4800);
+    } catch (e) { SF.toast(e.message || 'Could not use this image.', 5000); }
+  }
+  async function delRef(i) {
+    if (RF[i]) URL.revokeObjectURL(RF[i].url); delete RF[i];
+    await SF.store.delImg(B.id, 'ref' + i).catch(function () {}); renderStory();
   }
 
   /* ---------- step 3: pictures ---------- */
   function escRe(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
   var GROUP = /\b(kids|children|friends|trio|three|explorers|team|everyone|together|all of them|they)\b/i;
-  function promptFor(key) {
+  function buildFor(key) {
     var st = STYLES[B.style] || STYLES['3d'], scene, cast, extra, hay;
     if (key === 'cover') { scene = B.cover.prompt; hay = scene; extra = 'Book cover illustration, dramatic inviting composition, open sky or calm area in the upper third, no title text.'; }
     else {
       var m = /^s(\d+)b(\d+)$/.exec(key), b = B.stories[+m[1]].beats[+m[2]];
       scene = b.scene; hay = b.scene + ' ' + b.text; extra = 'Wide composition with the main subject centered and calm margins around it.';
     }
-    cast = B.characters.filter(function (c) { return c.name && new RegExp('\\b' + escRe(c.name) + '\\b', 'i').test(hay); });
-    if ((!cast.length || GROUP.test(scene)) && B.characters.length) cast = B.characters.slice(0, 3);
-    var looks = cast.map(function (c) { return c.name + ' = ' + c.look + '.'; }).join(' ');
-    var lock = looks ? 'CHARACTERS (identical in every picture of this book: same face, same hair, same exact outfit and colours, never change clothes): ' + looks + ' ' : '';
-    return (lock + 'SCENE: ' + scene + ' STYLE: ' + st.p + '. ' + extra + ' No text, no letters, no logos, no watermark, no frame.').slice(0, 1400);
+    cast = B.characters.map(function (c, i) { return { c: c, i: i }; }).filter(function (x) { return x.c.name && new RegExp('\\b' + escRe(x.c.name) + '\\b', 'i').test(hay); });
+    if ((!cast.length || GROUP.test(scene)) && B.characters.length) cast = B.characters.slice(0, 3).map(function (c, i) { return { c: c, i: i }; });
+    var withRef = cast.filter(function (x) { return RF[x.i]; }).slice(0, 4), noRef = cast.filter(function (x) { return !RF[x.i]; });
+    var tail = ' SCENE: ' + scene + ' STYLE: ' + st.p + '. ' + extra + ' No text, no letters, no logos, no watermark, no frame.', lock = '';
+    if (withRef.length) {
+      lock = withRef.map(function (x, k) { return 'Image ' + k + ' is the character ' + x.c.name; }).join('. ') + '. Draw these characters in the scene exactly like their reference images: same face, same hair, same skin tone, same outfit and colours, never change clothes. ';
+    }
+    var looks = noRef.map(function (x) { return x.c.name + ' = ' + x.c.look + '.'; }).join(' ');
+    if (looks) lock += 'CHARACTERS (identical in every picture: same face, same hair, same exact outfit and colours): ' + looks + ' ';
+    return { prompt: (lock + tail).slice(0, 1700), refs: withRef.map(function (x) { return RF[x.i].blob; }) };
   }
+  function promptFor(key) { return buildFor(key).prompt; }
   function seedFor(key) {                       // one shared seed per book keeps faces and outfits consistent; "New picture" sets its own
     if (B.seeds[key]) return B.seeds[key];
     if (!B.seeds.base) B.seeds.base = 1 + Math.floor(Math.random() * 2000000000);
@@ -311,11 +329,18 @@
   function missing() { return imageKeys().filter(function (k) { return !IM[k]; }); }
   function pgen(on, text, frac) { $('#pgen').classList.toggle('on', on); if (text) $('#pgenT').textContent = text; if (frac != null) $('#pgenB').style.width = Math.round(frac * 100) + '%'; }
   async function oneImage(key) {
-    var url = '/api/ai?prompt=' + encodeURIComponent(promptFor(key)) + '&seed=' + seedFor(key);
+    var bf = buildFor(key), url = '/api/ai?prompt=' + encodeURIComponent(bf.prompt) + '&seed=' + seedFor(key), init;
+    if (bf.refs.length) {
+      var sz = SF.trim(B.trim), bl2 = B.bleed === false ? 0 : SF.BLEED, w = sz.w + bl2, h = sz.h + 2 * bl2, kk = 1280 / Math.max(w, h), fd = new FormData();
+      fd.append('prompt', bf.prompt); fd.append('seed', String(seedFor(key)));
+      fd.append('width', String(Math.round(w * kk / 16) * 16)); fd.append('height', String(Math.round(h * kk / 16) * 16));
+      bf.refs.forEach(function (r, k) { fd.append('input_image_' + k, r, 'ref' + k + '.jpg'); });
+      url = '/api/ai?mode=ref'; init = { method: 'POST', body: fd };
+    }
     for (var a = 1; a <= 3 && !picStop; a++) {
       if (count() >= DAILY_LIMIT) throw Object.assign(new Error('Daily picture limit reached (' + DAILY_LIMIT + '). It resets tomorrow.'), { fatal: true });
       try {
-        var r = await fetch(url);
+        var r = await fetch(url, init);
         if (r.status === 429) throw Object.assign(new Error('Daily limit reached on the server. Try again tomorrow.'), { fatal: true });
         var ct = r.headers.get('content-type') || '';
         if (!r.ok || ct.indexOf('image') < 0) { var j = null; try { j = await r.json(); } catch (e) {} throw new Error(apiErr(r, j)); }
@@ -415,7 +440,7 @@
   function goto(n) {
     step = n;
     $$('.panel').forEach(function (p, i) { p.classList.toggle('on', i + 1 === n); });
-    $$('#steps button').forEach(function (b) { var s = +b.dataset.step; b.toggleAttribute('aria-current', false); if (s === n) b.setAttribute('aria-current', 'step'); else b.removeAttribute('aria-current'); b.disabled = s > 2 && !B.stories.length; });
+    $$('#steps button').forEach(function (b) { var s = +b.dataset.step; b.toggleAttribute('aria-current', false); if (s === n) b.setAttribute('aria-current', 'step'); else b.removeAttribute('aria-current'); b.disabled = s > 2 && !B.stories.length; b.classList.toggle('done', s < n && (s < 3 || !!B.stories.length)); });
     $('#btnBack').style.visibility = n === 1 ? 'hidden' : 'visible';
     var nx = $('#btnNext'); nx.style.visibility = n === 4 ? 'hidden' : 'visible';
     nx.textContent = { 1: B.stories.length ? 'Open story' : 'Write my book', 2: 'Make pictures', 3: 'Export' }[n] || '';
@@ -440,9 +465,17 @@
     try { localStorage.setItem('sf_last', B.id); } catch (e) {}
     step = B.stories.length ? 2 : 1; renderAll();
   }
+  async function startOver() {
+    if (!(await SF.ask('Delete everything and start over?', 'The story, the pictures, the reference images and the listing text of this book are deleted from this device. This cannot be undone.', 'Delete all', 'Keep it'))) return;
+    var old = B.id;
+    await wipeImages();
+    await SF.store.delBook(old).catch(function () {});
+    B = newBook(); step = 1; try { localStorage.setItem('sf_last', B.id); } catch (e) {}
+    renderAll(); save(); SF.toast('Clean slate. Describe your new book.');
+  }
   async function newOne() {
     if (B.stories.length || B.idea) save();
-    B = newBook(); IM = {}; $('#booksDlg').close(); step = 1; renderAll(); save();
+    B = newBook(); IM = {}; Object.keys(RF).forEach(function (k) { URL.revokeObjectURL(RF[k].url); }); RF = {}; $('#booksDlg').close(); step = 1; renderAll(); save();
   }
 
   /* ---------- wiring ---------- */
@@ -454,8 +487,9 @@
     $('#bookForm').addEventListener('input', onStoryInput);
     $('#p2').addEventListener('click', function (e) {
       var b = e.target.closest('[data-act=rewrite]'); if (b) rewrite(+b.dataset.s);
-      var p = e.target.closest('[data-act=photo]');
-      if (p) { photoFor = +p.dataset.c; if (!photoIn) { photoIn = document.createElement('input'); photoIn.type = 'file'; photoIn.accept = 'image/*'; photoIn.onchange = function () { var f = photoIn.files[0]; photoIn.value = ''; usePhoto(f); }; } photoIn.click(); }
+      var p = e.target.closest('[data-act=ref]'), d = e.target.closest('[data-act=refdel]');
+      if (d) delRef(+d.dataset.c);
+      if (p) { refFor = +p.dataset.c; if (!refIn) { refIn = document.createElement('input'); refIn.type = 'file'; refIn.accept = 'image/*'; refIn.onchange = function () { var f = refIn.files[0]; refIn.value = ''; setRef(f); }; } refIn.click(); }
     });
     $('#spreads').addEventListener('input', onStoryInput);
     $('#spreads').addEventListener('click', function (e) {
@@ -483,12 +517,12 @@
     $$('#steps button').forEach(function (b) { b.onclick = function () { goto(+b.dataset.step); }; });
     $('#btnBack').onclick = function () { goto(step - 1); };
     $('#btnNext').onclick = function () { if (step === 1 && !B.stories.length) writeBook(); else goto(step + 1); };
-    $('#btnBooks').onclick = showBooks; $('#booksClose').onclick = function () { $('#booksDlg').close(); }; $('#booksNew').onclick = newOne;
+    $('#btnBooks').onclick = showBooks; $('#btnReset').onclick = startOver; $('#btnReset2').onclick = startOver; $('#booksClose').onclick = function () { $('#booksDlg').close(); }; $('#booksNew').onclick = newOne;
     $('#booksList').addEventListener('click', async function (e) {
       var b = e.target.closest('[data-act]'); if (!b) return;
       if (b.dataset.act === 'open') openBook(b.dataset.id);
       if (b.dataset.act === 'del' && await SF.ask('Delete this book?', 'The text and all pictures are removed from this device.', 'Delete', 'Keep')) {
-        await SF.store.delBook(b.dataset.id); if (b.dataset.id === B.id) { B = newBook(); IM = {}; renderAll(); } showBooks();
+        await SF.store.delBook(b.dataset.id); if (b.dataset.id === B.id) { B = newBook(); IM = {}; RF = {}; renderAll(); } showBooks();
       }
     });
     window.addEventListener('beforeunload', function () { if (B) SF.store.putBook({ id: B.id, name: B.title || (B.idea || '').slice(0, 40) || 'Untitled book', updated: Date.now(), data: B }); });

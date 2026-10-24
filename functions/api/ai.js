@@ -10,6 +10,7 @@
 // Optional variables: TEXT_MODEL, DAILY_IMAGES (default 200), DAILY_TEXT (default 150)
 
 const IMG_MODEL = '@cf/black-forest-labs/flux-1-schnell';
+const REF_MODEL = '@cf/black-forest-labs/flux-2-klein-4b';   // takes up to 4 reference images (each under 512x512)
 const TEXT_MODELS = ['@cf/meta/llama-3.3-70b-instruct-fp8-fast', '@cf/meta/llama-3.1-8b-instruct'];
 
 const json = (o, status = 200) =>
@@ -170,9 +171,43 @@ async function describeImage(env, bytes) {
   return t.slice(0, 260);
 }
 
+// ---------- pictures that use the author's own reference images ----------
+async function refImage({ request, env }) {
+  if (!(await bump(env, request, 'img', parseInt(env.DAILY_IMAGES, 10) || 200))) return json({ error: 'daily_limit' }, 429);
+  let fd;
+  try { fd = await request.formData(); } catch (e) { return json({ error: 'Bad form data' }, 400); }
+  const prompt = String(fd.get('prompt') || '').slice(0, 1800);
+  if (!prompt) return json({ error: 'Missing prompt' }, 400);
+  const out = new FormData(); out.append('prompt', prompt);
+  let n = 0;
+  for (let i = 0; i < 4; i++) {
+    const f = fd.get('input_image_' + i);
+    if (f && typeof f === 'object' && f.size > 0 && f.size < 1500000) out.append('input_image_' + n++, f, 'ref' + i + '.jpg');
+  }
+  const dim = (v, d) => Math.min(1920, Math.max(256, Math.round((parseInt(v, 10) || d) / 16) * 16));
+  out.append('width', String(dim(fd.get('width'), 1024))); out.append('height', String(dim(fd.get('height'), 1024)));
+  const seed = (parseInt(fd.get('seed') || '0', 10) || 0) % 2147483647; if (seed) out.append('seed', String(seed));
+  try {
+    const rsp = new Response(out);
+    const r = await env.AI.run(REF_MODEL, { multipart: { body: rsp.body, contentType: rsp.headers.get('content-type') } });
+    let bytes;
+    const b64 = r && (typeof r === 'string' ? r : (r.image || r.result?.image));
+    if (b64) bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+    else if (r instanceof ReadableStream) bytes = new Uint8Array(await new Response(r).arrayBuffer());
+    else if (r instanceof ArrayBuffer || ArrayBuffer.isView(r)) bytes = new Uint8Array(r.buffer || r);
+    if (!bytes || !bytes.length) throw new Error('no image returned');
+    const png = bytes[0] === 0x89;
+    return new Response(bytes, { headers: { 'content-type': png ? 'image/png' : 'image/jpeg', 'cache-control': 'no-store' } });
+  } catch (e) {
+    return json({ error: 'ai_failed', message: String(e && e.message || e).slice(0, 200) }, 502);
+  }
+}
+
 // ---------- handlers ----------
-export async function onRequestPost({ request, env }) {
+export async function onRequestPost(ctx) {
+  const { request, env } = ctx;
   if (!env.AI) return json({ error: 'Workers AI binding "AI" is missing' }, 500);
+  if (new URL(request.url).searchParams.get('mode') === 'ref') return refImage(ctx);
   let b;
   try { b = await request.json(); } catch (e) { return json({ error: 'Bad request body' }, 400); }
   if (!(await bump(env, request, 'txt', parseInt(env.DAILY_TEXT, 10) || 150))) return json({ error: 'daily_limit' }, 429);
