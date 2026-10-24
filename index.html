@@ -97,6 +97,7 @@ details.more summary{cursor:pointer;font-weight:700;padding:12px 0;font-family:F
 .beat textarea.sc{min-height:64px;font-size:14px;color:var(--soft)}
 .chars .c{display:grid;grid-template-columns:110px 1fr;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
 @media(max-width:480px){.chars .c{grid-template-columns:1fr}}
+.chars .c .btn{grid-column:1/-1;justify-self:start}
 .warnbox{border:2px solid var(--bad);background:#FDECEF;border-radius:10px;padding:12px 14px;margin:16px 0;font-size:14px}
 
 /* picture step: pairs of pages shown as an open book */
@@ -256,8 +257,8 @@ dialog .btns{justify-content:flex-end;margin-bottom:0}
 <dialog id="booksDlg"><h3>My books</h3><div class="books" id="booksList"></div><div class="btns"><button class="btn ghost" id="booksClose">Close</button><button class="btn" id="booksNew">New book</button></div></dialog>
 <div id="toast" role="status" aria-live="polite"></div>
 
-<script src="app3.js?v=2"></script>
+<script src="app3.js?v=1"></script>
 <script src="app2.js?v=2"></script>
-<script src="app1.js?v=3"></script>
+<script src="app1.js?v=2"></script>
 </body>
 </html>

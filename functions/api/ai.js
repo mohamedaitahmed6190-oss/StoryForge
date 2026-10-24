@@ -151,6 +151,24 @@ Return this JSON shape:
 ${IP_RULE}${avoidLine(b)}`;
 }
 
+// ---------- reference photo -> written "look" (images are never stored) ----------
+const VISION = '@cf/meta/llama-3.2-11b-vision-instruct';
+const DESCRIBE = 'This is a reference picture for a character in a children\'s picture book. Describe how an illustrator should draw this character as a friendly cartoon: approximate age, skin tone, hair colour and style, the outfit (each piece with its colour), and one accessory if there is one. Write ONE sentence of 30-40 words. No names, do not guess who the person is, no background, no commentary.';
+async function describeImage(env, bytes) {
+  const run = () => env.AI.run(VISION, { image: bytes, prompt: DESCRIBE, max_tokens: 140 });
+  let r;
+  try { r = await run(); }
+  catch (e) {
+    if (!/agree|licen|5016|terms/i.test(String(e && e.message || e))) throw e;
+    await env.AI.run(VISION, { prompt: 'agree' });          // one-time licence acceptance for the Llama vision model
+    r = await run();
+  }
+  const raw = r && (r.response ?? r.result?.response ?? r.description);
+  const t = String(raw || '').replace(/["\n\r]+/g, ' ').replace(/^\s*(this|the)\s+(character|image|picture)[^,.:]*[:,]\s*/i, '').replace(/\s+/g, ' ').trim();
+  if (t.length < 15) throw new Error('empty description');
+  return t.slice(0, 260);
+}
+
 // ---------- handlers ----------
 export async function onRequestPost({ request, env }) {
   if (!env.AI) return json({ error: 'Workers AI binding "AI" is missing' }, 500);
@@ -158,6 +176,13 @@ export async function onRequestPost({ request, env }) {
   try { b = await request.json(); } catch (e) { return json({ error: 'Bad request body' }, 400); }
   if (!(await bump(env, request, 'txt', parseInt(env.DAILY_TEXT, 10) || 150))) return json({ error: 'daily_limit' }, 429);
   try {
+    if (b.action === 'describe') {
+      const m = /^data:image\/(?:jpeg|png|webp);base64,([A-Za-z0-9+/=]+)$/.exec(String(b.image || ''));
+      if (!m || m[1].length > 1200000) return json({ error: 'Bad or too large image' }, 400);
+      const bin = atob(m[1]), bytes = new Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      return json({ ok: true, data: { look: await describeImage(env, bytes) } });
+    }
     if (b.action === 'outline') {
       if (!clip(b.idea, 900).trim()) return json({ error: 'Missing idea' }, 400);
       return json({ ok: true, data: await chat(env, SYS, outlinePrompt(b), 1800) });

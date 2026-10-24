@@ -139,7 +139,7 @@
         var oh = SF.ipHits(JSON.stringify(o)).filter(function (w) { return SF.ipHits(B.idea).indexOf(w) < 0; });
         if (!oh.length) break; avoid = avoid.concat(oh);
       }
-      var chars = (o.characters || []).filter(function (c) { return c && c.name; }).slice(0, 4).map(function (c) { return { name: clip(c.name, 30), role: clip(c.role, 80), look: clip(c.look, 220) }; });
+      var chars = (o.characters || []).filter(function (c) { return c && c.name; }).slice(0, 4).map(function (c) { return { name: clip(c.name, 30), role: clip(c.role, 80), look: clip(c.look, 260) }; });
       var sts = (o.stories || []).filter(function (s) { return s && s.title; }).slice(0, B.nStories);
       if (!chars.length || !sts.length) throw new Error('The AI returned an incomplete plan. Try again.');
       B.title = clip(o.title, 200) || 'Untitled'; B.subtitle = clip(o.subtitle, 200); B.tagline = clip(o.tagline, 200); B.dedication = clip(o.dedication, 160);
@@ -192,7 +192,7 @@
     $('#bookForm').hidden = !has; $('#storyEmpty').hidden = has;
     $('#bTitle').value = B.title; $('#bSub').value = B.subtitle; $('#bDed').value = B.dedication;
     $('#chars').innerHTML = B.characters.map(function (c, i) {
-      return '<div class="c"><input type="text" data-c="' + i + '" data-f="name" value="' + esc(c.name) + '" aria-label="Character name" maxlength="30"><textarea rows="2" data-c="' + i + '" data-f="look" aria-label="How ' + esc(c.name) + ' looks" maxlength="220">' + esc(c.look) + '</textarea></div>';
+      return '<div class="c"><input type="text" data-c="' + i + '" data-f="name" value="' + esc(c.name) + '" aria-label="Character name" maxlength="30"><textarea rows="3" data-c="' + i + '" data-f="look" aria-label="How ' + esc(c.name) + ' looks" maxlength="260">' + esc(c.look) + '</textarea><button type="button" class="btn sm ghost" data-act="photo" data-c="' + i + '">Use a photo as reference</button></div>';
     }).join('');
     $('#stories').innerHTML = B.stories.map(function (s, i) {
       var beats = (s.beats || []).map(function (b, j) {
@@ -232,6 +232,36 @@
     try { await writeStory(i); renderStory(); save(); SF.toast('Story ' + (i + 1) + ' rewritten.'); }
     catch (e) { SF.toast(e.message || 'Could not write it. Try again.', 5000); }
     showGen(false);
+  }
+
+  /* ---------- reference photo for a character ---------- */
+  var photoFor = -1, photoIn;
+  function shrink(file) {
+    return new Promise(function (res, rej) {
+      var im = new Image(), u = URL.createObjectURL(file);
+      im.onload = function () {
+        var k = Math.min(1, 640 / Math.max(im.width, im.height)), c = document.createElement('canvas');
+        c.width = Math.round(im.width * k); c.height = Math.round(im.height * k);
+        c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); URL.revokeObjectURL(u);
+        res(c.toDataURL('image/jpeg', 0.82));
+      };
+      im.onerror = function () { URL.revokeObjectURL(u); rej(new Error('This file is not a picture.')); };
+      im.src = u;
+    });
+  }
+  async function usePhoto(file) {
+    var i = photoFor, ch = B.characters[i]; if (!file || !ch) return;
+    var btn = $('#chars [data-act=photo][data-c="' + i + '"]'); if (btn) { btn.disabled = true; btn.textContent = 'Reading the photo…'; }
+    try {
+      var data = await shrink(file);
+      genStop = false;
+      var d = await api('describe', { image: data }, 2);
+      ch.look = clip(d.look, 260); renderStory(); save();
+      SF.toast(ch.name + ' will now be drawn from your photo. Check the description, then make pictures.', 5200);
+    } catch (e) {
+      if (btn) { btn.disabled = false; btn.textContent = 'Use a photo as reference'; }
+      SF.toast(e.message || 'Could not read the photo.', 5000);
+    }
   }
 
   /* ---------- step 3: pictures ---------- */
@@ -422,7 +452,11 @@
     $('#btnWrite').onclick = writeBook;
     $('#genStop').onclick = function () { genStop = true; $('#genT').textContent = 'Stopping…'; };
     $('#bookForm').addEventListener('input', onStoryInput);
-    $('#p2').addEventListener('click', function (e) { var b = e.target.closest('[data-act=rewrite]'); if (b) rewrite(+b.dataset.s); });
+    $('#p2').addEventListener('click', function (e) {
+      var b = e.target.closest('[data-act=rewrite]'); if (b) rewrite(+b.dataset.s);
+      var p = e.target.closest('[data-act=photo]');
+      if (p) { photoFor = +p.dataset.c; if (!photoIn) { photoIn = document.createElement('input'); photoIn.type = 'file'; photoIn.accept = 'image/*'; photoIn.onchange = function () { var f = photoIn.files[0]; photoIn.value = ''; usePhoto(f); }; } photoIn.click(); }
+    });
     $('#spreads').addEventListener('input', onStoryInput);
     $('#spreads').addEventListener('click', function (e) {
       var b = e.target.closest('[data-act]'); if (!b) return; var k = b.dataset.key;
