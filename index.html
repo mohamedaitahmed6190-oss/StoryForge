@@ -118,6 +118,8 @@ details.more summary{cursor:pointer;font-weight:700;padding:14px 0;font-family:'
 .spread .im .ph,.coverbox .im .ph{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:10px;color:#7B7F90;font-size:13px}
 .spread .im.busy::before,.coverbox .im.busy::before{content:"";position:absolute;inset:0;z-index:2;background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.6) 50%,transparent 70%);animation:sh 1.2s infinite}
 @keyframes sh{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
+.regen{position:absolute;right:8px;bottom:8px;z-index:3;border:0;border-radius:999px;padding:8px 13px;font:700 13px Nunito;background:rgba(12,16,28,.82);color:#fff;cursor:pointer;backdrop-filter:blur(6px);box-shadow:0 6px 16px -6px rgba(0,0,0,.7)}
+.regen:hover{background:#0C101C}
 .sp-h{display:flex;justify-content:space-between;align-items:baseline;margin-top:26px;gap:10px}
 .sp-h h3{color:var(--c)}
 .sp-a{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 14px}
@@ -240,7 +242,7 @@ dialog .btns{justify-content:flex-end;margin-bottom:0}
     <h3 style="margin-top:26px">Cover</h3>
     <div class="coverbox"><div class="im" id="coverIm" data-img="cover"></div>
       <div><div class="field" style="margin-top:0"><label for="coverPrompt">Cover scene</label><textarea id="coverPrompt" rows="4"></textarea></div>
-        <div class="sp-a"><button class="btn sm" id="coverGo">Make cover picture</button></div></div></div>
+        <div class="sp-a"><button class="btn sm" id="coverGo">New cover picture</button></div></div></div>
     <div id="spreads"></div>
   </section>
 
@@ -271,6 +273,6 @@ dialog .btns{justify-content:flex-end;margin-bottom:0}
 
 <script src="app3.js?v=2"></script>
 <script src="app2.js?v=3"></script>
-<script src="app1.js?v=6"></script>
+<script src="app1.js?v=7"></script>
 </body>
 </html>

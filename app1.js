@@ -306,7 +306,8 @@
   function paintImage(key) {
     $$('[data-img="' + key + '"]').forEach(function (el) {
       el.classList.toggle('busy', !!BUSY[key]);
-      el.innerHTML = IM[key] ? '<img alt="" src="' + IM[key].url + '">' : '<div class="ph">' + (BUSY[key] ? 'Painting…' : 'No picture yet') + '</div>';
+      el.innerHTML = (IM[key] ? '<img alt="" src="' + IM[key].url + '">' : '<div class="ph">' + (BUSY[key] ? 'Painting…' : 'No picture yet') + '</div>') +
+        (IM[key] && !BUSY[key] ? '<button type="button" class="regen" data-act="gen" data-key="' + key + '">↻ Not good? Make a new one</button>' : '');
     });
   }
   function renderPics() {
@@ -500,6 +501,7 @@
     $('#btnAllPics').onclick = function () { runPics(missing()); };
     $('#btnStopPics').onclick = function () { picStop = true; };
     $('#coverPrompt').addEventListener('input', function (e) { B.cover.prompt = e.target.value; save(); });
+    $('#coverIm').addEventListener('click', function (e) { if (e.target.closest('.regen')) { B.seeds.cover = 1 + Math.floor(Math.random() * 2000000000); runPics(['cover']).then(renderPics); } });
     $('#coverGo').onclick = function () { B.seeds.cover = 1 + Math.floor(Math.random() * 2000000000); runPics(['cover']).then(renderPics); };
     $('#btnInterior').onclick = function () { exportPdf('interior'); };
     $('#btnCover').onclick = function () { exportPdf('cover'); };
