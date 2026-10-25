@@ -162,7 +162,7 @@
     var light = await doc.embedFont(await deps.loadFont('nunito-400'), { subset: true });
     doc.setTitle(book.title || 'Untitled'); doc.setAuthor(book.author || ''); doc.setProducer('StoryForge'); doc.setCreator('StoryForge');
     var ink = hex(P, INK), soft = hex(P, SOFT);
-    var ageMax = { '3-5': 30, '6-8': 24, '9-12': 20, '6-12': 22 }[book.age] || 24;
+    var ageMax = { '3-5': 30, '6-8': 24, '9-12': 20, '6-12': 22, '18+': 18 }[book.age] || 24;
     var tocMap = {}; plan.tocs.forEach(function (t) { tocMap[t.story] = t.page; });
 
     for (var i = 0; i < n; i++) {
@@ -438,7 +438,7 @@
     add('info', 'KDP limits how many new titles you can create and submit each week per format. The limits reset every Sunday at 00:00 UTC.');
     add('info', 'KDP > Content, in this order: (1) get a free KDP ISBN, (2) ' + (hc ? 'print option: ' + pp.label + ' (hardcover)' : pp.label) + ', (3) trim ' + t.w + ' × ' + t.h + ' in, (4) Bleed (PDF only), (5) upload the INTERIOR first, then the cover (the cover size depends on the page count), (6) leave "my cover has a barcode" unchecked, (7) Launch Previewer, then Approve.');
     add('info', 'AI disclosure: Texts = entire work with minimal or no editing; Images = many AI-generated images with minimal or no editing. Name the real tools you used.');
-    add('info', 'Do not tick "Low-content book" or "Large-print book". Pick reading age to match your story, and 2–3 categories that really fit.');
+    add('info', 'Do not tick "Low-content book" or "Large-print book". ' + (book.age === '18+' ? 'This book is for adults: leave the reading age empty (or choose the highest one) and pick adult categories, not Children\'s Books.' : 'Pick reading age to match your story, and 2–3 categories that really fit.'));
     if (n <= 79) add('info', 'KDP prints spine text only on books with more than 79 pages; the cover uses a plain spine.');
     return out;
   };

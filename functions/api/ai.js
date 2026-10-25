@@ -74,15 +74,21 @@ async function chat(env, system, user, maxTokens) {
   throw lastErr || new Error('text model failed');
 }
 
-const SYS = 'You are an award-winning children\'s picture-book author and a Kindle Direct Publishing expert. ' +
+const SYS_KIDS = 'You are an award-winning children\'s picture-book author and a Kindle Direct Publishing expert. ' +
   'You reply with ONE valid JSON object and nothing else: no markdown, no comments, no text before or after it. ' +
   'All content is original and child-safe: no trademarked or licensed characters, brands, franchises, songs or real people.';
+const SYS_ADULT = 'You are an award-winning author of illustrated storybooks for adult readers and a Kindle Direct Publishing expert. ' +
+  'You reply with ONE valid JSON object and nothing else: no markdown, no comments, no text before or after it. ' +
+  'All content is original and suitable for a general audience: no explicit sexual content, no graphic violence or gore, no hate, no trademarked or licensed characters, brands, franchises, songs or real people.';
+const isAdult = b => b && b.age === '18+';
+const sysFor = b => isAdult(b) ? SYS_ADULT : SYS_KIDS;
 
 const AGE = {
   '3-5':  { words: '30-50',  note: 'very simple words, short sentences, repetition and gentle sounds' },
   '6-8':  { words: '65-95',  note: 'simple sentences, lively dialogue, small cliffhangers between beats' },
   '6-12': { words: '75-110', note: 'clear, lively language that a 6-year-old can follow and a 12-year-old still enjoys: simple sentences with some richer words, humour, real dialogue and gentle suspense' },
   '9-12': { words: '90-130', note: 'richer vocabulary, humour, stronger suspense and emotion' },
+  '18+':  { words: '110-160', note: 'for adult readers aged 18 and over: sophisticated vocabulary, wit, emotional depth, natural grown-up dialogue and a layered plot; every character is an adult; still clean and general-audience' },
 };
 
 const clip = (v, n) => String(v ?? '').slice(0, n);
@@ -100,7 +106,7 @@ const castLine = b => {
 
 function outlinePrompt(b) {
   const n = num(b.stories, 7, 1, 12), a = AGE[b.age] || AGE['6-8'];
-  return `Create the plan for an illustrated children's story book.
+  return `Create the plan for an illustrated ${isAdult(b) ? 'story book for adult readers' : 'children\'s story book'}.
 Book idea from the author: """${clip(b.idea, 900)}"""
 Reader age: ${b.age || '6-8'} (${a.note}). Language of all text: ${clip(b.lang, 30) || 'English'}.
 The book has exactly ${n} short stories. Each story continues the same cast so the whole book feels like one journey.
@@ -112,7 +118,7 @@ Return this JSON shape:
  "subtitle": "subtitle that says what the book is (max 90 chars)",
  "tagline": "one-line hook",
  "dedication": "short warm dedication line",
- "characters": [ { "name": "first name only", "role": "who they are", "look": "FIXED visual description for the illustrator, the same in every picture. It MUST start with \"a N-year-old girl\" or \"a N-year-old boy\" (decide from the name; a girl must clearly look like a girl, with feminine face and long or styled hair; a boy must clearly look like a boy), then skin tone, hair colour and style, ONE specific outfit (top, bottoms, shoes, each with a colour) that never changes, one accessory (max 35 words)" } ],
+ "characters": [ { "name": "first name only", "role": "who they are", "look": "FIXED visual description for the illustrator, the same in every picture. It MUST start with ${isAdult(b) ? '\\"a N-year-old woman\\" or \\"a N-year-old man\\" (N is 18 or more; decide from the name; a woman must clearly look like a woman and a man like a man)' : '\\"a N-year-old girl\\" or \\"a N-year-old boy\\" (decide from the name; a girl must clearly look like a girl, with feminine face and long or styled hair; a boy must clearly look like a boy)'}, then skin tone, hair colour and style, ONE specific outfit (top, bottoms, shoes, each with a colour) that never changes, one accessory (max 35 words)" } ],
  "stories": [ { "title": "story title", "summary": "2 sentences: what happens and how it ends", "setting": "where it happens, visually", "lesson": "gentle lesson in 5-8 words" } ]
 }
 ${castLine(b)}
@@ -144,7 +150,7 @@ ${IP_RULE}${avoidLine(b)}`;
 
 function listingPrompt(b) {
   const titles = (b.bible?.stories || []).map(s => clip(s.title, 80)).join('; ');
-  return `Prepare the Amazon KDP listing for this illustrated children's paperback.
+  return `Prepare the Amazon KDP listing for this illustrated ${isAdult(b) ? 'storybook for adult readers' : 'children\'s paperback'}.
 Title: "${clip(b.bible?.title, 80)}". Subtitle: "${clip(b.bible?.subtitle, 100)}". Reader age: ${b.age || '6-8'}. Language: ${clip(b.lang, 30) || 'English'}.
 Stories inside: ${titles}.
 Cast: ${(b.bible?.characters || []).map(c => clip(c.name, 30) + ' (' + clip(c.role, 60) + ')').join(', ')}.
@@ -155,8 +161,8 @@ Return this JSON shape:
  "description": "book description for the Amazon page, 120-200 words, plain text with paragraphs separated by \\n, no trademarks, no promises of sales or awards",
  "back_cover": "back-cover blurb, 50-80 words, plain text",
  "keywords": ["exactly 7 search phrases, each max 50 characters, no trademarked names, no repeating words from the title"],
- "categories": ["3 KDP category paths such as Children's Books > Action & Adventure"],
- "reading_age": { "min": 6, "max": 9 },
+ "categories": ["3 KDP category paths such as ${isAdult(b) ? 'Literature & Fiction > Action & Adventure' : 'Children\'s Books > Action & Adventure'}"],
+ "reading_age": ${isAdult(b) ? '{ "min": 18, "max": 18 }' : '{ "min": 6, "max": 9 }'},
  "cover_prompt": "illustration brief for the FRONT COVER picture: main characters by name in one dramatic scene, 30-50 words, no text or letters"
 }
 ${IP_RULE}${avoidLine(b)}`;
@@ -230,15 +236,15 @@ export async function onRequestPost(ctx) {
     }
     if (b.action === 'outline') {
       if (!clip(b.idea, 900).trim()) return json({ error: 'Missing idea' }, 400);
-      return json({ ok: true, data: await chat(env, SYS, outlinePrompt(b), 1800) });
+      return json({ ok: true, data: await chat(env, sysFor(b), outlinePrompt(b), 1800) });
     }
     if (b.action === 'story') {
       if (!b.bible) return json({ error: 'Missing bible' }, 400);
-      return json({ ok: true, data: await chat(env, SYS, storyPrompt(b), 1800) });
+      return json({ ok: true, data: await chat(env, sysFor(b), storyPrompt(b), 1800) });
     }
     if (b.action === 'listing') {
       if (!b.bible) return json({ error: 'Missing bible' }, 400);
-      return json({ ok: true, data: await chat(env, SYS, listingPrompt(b), 1500) });
+      return json({ ok: true, data: await chat(env, sysFor(b), listingPrompt(b), 1500) });
     }
     return json({ error: 'Unknown action' }, 400);
   } catch (e) {

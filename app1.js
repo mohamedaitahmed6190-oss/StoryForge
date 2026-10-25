@@ -185,7 +185,7 @@
     [B.title, B.subtitle].forEach(function (w) { w = String(w || '').trim(); if (w.length > 2) out = out.split(w).join('').split(w.toLowerCase()).join(''); });
     return out.replace(/["“”]/g, '').replace(/\s{2,}/g, ' ').replace(/\s+([.,])/g, '$1').trim();
   }
-  function gTag(c) { var l = String(c.look || ''); return /\bgirl\b/i.test(l) ? ' (a girl)' : /\bboy\b/i.test(l) ? ' (a boy)' : ''; }
+  function gTag(c) { var l = String(c.look || ''); return /\bgirl\b/i.test(l) ? ' (a girl)' : /\bboy\b/i.test(l) ? ' (a boy)' : /\bwoman\b/i.test(l) ? ' (a woman)' : /\bman\b/i.test(l) ? ' (a man)' : ''; }
   function enforceCast(o, cast) {                // if the AI still renamed the characters, put the author's names back
     var want = String(cast || '').split(/,|&|\band\b|\+|;/i).map(function (x) { return x.trim(); }).filter(Boolean).slice(0, 4);
     if (!want.length || !o || !Array.isArray(o.characters)) return o;
@@ -248,7 +248,7 @@
     var kw = (d.keywords || []).map(function (k) { return clip(k, 50); }).filter(Boolean).slice(0, 7); while (kw.length < 7) kw.push('');
     var ra = d.reading_age || {};
     B.listing = { title: clip(d.title || B.title, 200), subtitle: clip(d.subtitle || B.subtitle, 200), description: clip(d.description, 4000), back_cover: clip(d.back_cover, 700),
-      keywords: kw, categories: (d.categories || []).map(function (c) { return clip(c, 120); }).slice(0, 3), reading_age: { min: parseInt(ra.min, 10) || 6, max: parseInt(ra.max, 10) || 9 }, cover_prompt: clip(d.cover_prompt, 500) };
+      keywords: kw, categories: (d.categories || []).map(function (c) { return clip(c, 120); }).slice(0, 3), reading_age: B.age === '18+' ? { min: 18, max: 18 } : { min: parseInt(ra.min, 10) || 6, max: parseInt(ra.max, 10) || 9 }, cover_prompt: clip(d.cover_prompt, 500) };
     if (!B.cover.prompt) B.cover.prompt = B.listing.cover_prompt || ('The main characters ' + B.characters.map(function (c) { return c.name; }).join(', ') + ' on an exciting adventure');
     save();
   }
@@ -371,7 +371,7 @@
     var withRef = cast.filter(function (x) { return RF[x.i]; }).slice(0, 4), noRef = cast.filter(function (x) { return !RF[x.i]; });
     var tail = ' SCENE: ' + scene + ' STYLE: ' + st.p + '. ' + extra + ' No text, no letters, no logos, no watermark, no frame.', lock = '';
     if (withRef.length) {
-      lock = withRef.map(function (x, k) { return 'Image ' + k + ' is the character ' + x.c.name + gTag(x.c); }).join('. ') + '. Draw these characters in the scene exactly like their reference images: same face, same hair, same skin tone, same age, same height and body proportions, same outfit and colours, never change clothes. All children are 8 to 10 years old with natural child proportions, not chibi or baby-like. ';
+      lock = withRef.map(function (x, k) { return 'Image ' + k + ' is the character ' + x.c.name + gTag(x.c); }).join('. ') + '. Draw these characters in the scene exactly like their reference images: same face, same hair, same skin tone, same age, same height and body proportions, same outfit and colours, never change clothes. ' + (B.age === '18+' ? 'All characters are adults with natural adult proportions, never childlike, not chibi. ' : 'All children are 8 to 10 years old with natural child proportions, not chibi or baby-like. ');
     }
     var looks = noRef.map(function (x) { return x.c.name + gTag(x.c) + ' = ' + x.c.look + '.'; }).join(' ');
     if (looks) lock += 'CHARACTERS (identical in every picture: same face, same hair, same exact outfit and colours): ' + looks + ' ';
@@ -535,7 +535,7 @@
       fld('Back cover text', 'l_back', L.back_cover, 700, 'ta', 'back_cover');
     L.keywords.forEach(function (k, i) { h += fld('Keyword ' + (i + 1), 'l_kw' + i, k, 50, 'in', 'kw' + i); });
     (L.categories || []).forEach(function (c, i) { h += fld('Category ' + (i + 1), 'l_cat' + i, c, 120, 'in', 'cat' + i); });
-    h += '<p class="hint">Reading age: ' + L.reading_age.min + ' to ' + L.reading_age.max + ' years. Check category names against the list KDP shows you.</p>';
+    h += '<p class="hint">' + (L.reading_age.min >= 18 ? 'Reading age: for adult readers. In KDP leave the reading age empty, or choose the highest option, and pick adult categories (not Children\'s Books).' : 'Reading age: ' + L.reading_age.min + ' to ' + L.reading_age.max + ' years.') + ' Check category names against the list KDP shows you.</p>';
     el.innerHTML = h; $$('[data-cnt]', el).forEach(updCnt);
   }
   function updCnt(span) {
