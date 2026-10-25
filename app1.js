@@ -155,6 +155,11 @@
     if (text) $('#genT').textContent = text;
     if (frac != null) $('#genB').style.width = Math.round(frac * 100) + '%';
   }
+  function noTitle(t) {                       // the AI paints any title words it sees in the scene, so remove them
+    var out = String(t || '');
+    [B.title, B.subtitle].forEach(function (w) { w = String(w || '').trim(); if (w.length > 2) out = out.split(w).join('').split(w.toLowerCase()).join(''); });
+    return out.replace(/["“”]/g, '').replace(/\s{2,}/g, ' ').replace(/\s+([.,])/g, '$1').trim();
+  }
   function gTag(c) { var l = String(c.look || ''); return /\bgirl\b/i.test(l) ? ' (a girl)' : /\bboy\b/i.test(l) ? ' (a boy)' : ''; }
   function enforceCast(o, cast) {                // if the AI still renamed the characters, put the author's names back
     var want = String(cast || '').split(/,|&|\band\b|\+|;/i).map(function (x) { return x.trim(); }).filter(Boolean).slice(0, 4);
@@ -218,7 +223,7 @@
     var ra = d.reading_age || {};
     B.listing = { title: clip(d.title || B.title, 200), subtitle: clip(d.subtitle || B.subtitle, 200), description: clip(d.description, 4000), back_cover: clip(d.back_cover, 700),
       keywords: kw, categories: (d.categories || []).map(function (c) { return clip(c, 120); }).slice(0, 3), reading_age: { min: parseInt(ra.min, 10) || 6, max: parseInt(ra.max, 10) || 9 }, cover_prompt: clip(d.cover_prompt, 500) };
-    if (!B.cover.prompt) B.cover.prompt = B.listing.cover_prompt || ('The main characters ' + B.characters.map(function (c) { return c.name; }).join(', ') + ' on an adventure, ' + B.title);
+    if (!B.cover.prompt) B.cover.prompt = B.listing.cover_prompt || ('The main characters ' + B.characters.map(function (c) { return c.name; }).join(', ') + ' on an exciting adventure');
     save();
   }
   function coverFallback() {
@@ -330,7 +335,7 @@
   var GROUP = /\b(kids|children|friends|trio|three|explorers|team|everyone|together|all of them|they)\b/i;
   function buildFor(key) {
     var st = STYLES[B.style] || STYLES['3d'], scene, cast, extra, hay;
-    if (key === 'cover') { scene = B.cover.prompt; hay = scene; extra = 'Book cover illustration, dramatic inviting composition, open sky or calm area in the upper third, no title text.'; }
+    if (key === 'cover') { scene = noTitle(B.cover.prompt); hay = scene; extra = 'Book cover illustration, dramatic inviting composition, open sky or calm area in the upper third. The picture contains NO words, NO letters, NO title, NO banner and NO signs.'; }
     else {
       var m = /^s(\d+)b(\d+)$/.exec(key), b = B.stories[+m[1]].beats[+m[2]];
       scene = b.scene; hay = b.scene + ' ' + b.text; extra = 'Wide composition with the main subject centered and calm margins around it.';
