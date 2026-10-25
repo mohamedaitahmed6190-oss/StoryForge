@@ -182,7 +182,8 @@
         var oh = SF.ipHits(JSON.stringify(o)).filter(function (w) { return SF.ipHits(B.idea).indexOf(w) < 0; });
         if (!oh.length) break; avoid = avoid.concat(oh);
       }
-      o = enforceCast(o, B.cast);
+      var ideaNames = Array.isArray(o.names_in_idea) ? o.names_in_idea.filter(function (n) { return typeof n === 'string' && n.trim(); }).map(function (n) { return n.trim().replace(/[,;&+]/g, ''); }).slice(0, 4).join(', ') : '';
+      o = enforceCast(o, (B.cast || '').trim() || ideaNames);     // names typed in the cast box win, otherwise the names found in the idea
       var chars = (o.characters || []).filter(function (c) { return c && c.name; }).slice(0, 4).map(function (c) { return { name: clip(c.name, 30), role: clip(c.role, 80), look: clip(c.look, 260) }; });
       var sts = (o.stories || []).filter(function (s) { return s && s.title; }).slice(0, B.nStories);
       if (!chars.length || !sts.length) throw new Error('The AI returned an incomplete plan. Try again.');

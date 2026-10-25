@@ -88,14 +88,14 @@ const AGE = {
 const clip = (v, n) => String(v ?? '').slice(0, n);
 const num = (v, d, lo, hi) => Math.min(hi, Math.max(lo, parseInt(v, 10) || d));
 
-const IP_RULE = `Originality rule: use ONLY original, invented names for characters, places, creatures, objects and the book title. Never use or imitate any trademarked, copyrighted or famous name, brand, film, game, cartoon, book, song, catchphrase or celebrity (for example no Disney, Pixar, Marvel, Pokemon, Nintendo, Harry Potter, Star Wars, Lego, Barbie, Minecraft, Paw Patrol, Dr. Seuss, no real brands or sports teams). Do not copy plots of famous stories. Everything must feel new and original.`;
+const IP_RULE = `Originality rule: use ONLY original, invented names for places, creatures, objects and the book title, and for characters the author did not name (the only exception: character names written by the author in the idea or the fixed cast are always kept exactly as given). Never use or imitate any trademarked, copyrighted or famous name, brand, film, game, cartoon, book, song, catchphrase or celebrity (for example no Disney, Pixar, Marvel, Pokemon, Nintendo, Harry Potter, Star Wars, Lego, Barbie, Minecraft, Paw Patrol, Dr. Seuss, no real brands or sports teams). Do not copy plots of famous stories. Everything must feel new and original.`;
 const avoidLine = b => (Array.isArray(b.avoid) && b.avoid.length) ? `\nDo NOT use these words or anything like them: ${b.avoid.slice(0, 12).map(w => clip(w, 30)).join(', ')}.` : '';
 
 const castLine = b => {
   const names = clip(b.cast, 140).trim();
   return names
     ? `FIXED CAST (the author chose these): the main characters are named exactly: ${names}. Use EXACTLY these names, spelled exactly like this, and do not rename them or add other main characters. Keep any description of them that appears in the idea.`
-    : `If the author's idea already names any character, keep those exact names and descriptions. Invent new original names only when the idea gives none.`;
+    : `NAMES IN THE IDEA ARE FIXED. Read the author's idea and list every character name written in it in "names_in_idea", spelled exactly as written (even common names like Ben, Emma or Jack). Those names, and no others, must be the main characters: use them exactly, never rename, replace or "improve" them, and keep every description the idea gives for them. Invent new original names only when the idea names nobody, or to reach 2 characters when it names just one.`;
 };
 
 function outlinePrompt(b) {
@@ -107,6 +107,7 @@ The book has exactly ${n} short stories. Each story continues the same cast so t
 
 Return this JSON shape:
 {
+ "names_in_idea": ["every character name written in the author's idea, spelled exactly like that; [] if the idea names nobody"],
  "title": "catchy book title (max 60 chars)",
  "subtitle": "subtitle that says what the book is (max 90 chars)",
  "tagline": "one-line hook",
