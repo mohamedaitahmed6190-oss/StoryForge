@@ -521,7 +521,9 @@
         var r = await SF.buildCover(sb, deps); SF.download(r.bytes, name + '-cover.pdf');
         SF.toast('Cover PDF ready: ' + r.info.width.toFixed(3) + ' × ' + r.info.height.toFixed(3) + ' in.', 5000);
       } else {
-        var bytes = await SF.buildInterior(sb, deps); SF.download(bytes, name + '-interior.pdf');
+        var bytes = await SF.buildInterior(sb, deps);
+        if (bytes.length > 650 * 1048576) throw new Error('The interior PDF is ' + (bytes.length / 1048576).toFixed(0) + ' MB. KDP accepts files up to 650 MB. Use fewer pages or smaller pictures.');
+        SF.download(bytes, name + '-interior.pdf');
         SF.toast('Interior PDF ready (' + (bytes.length / 1048576).toFixed(1) + ' MB).', 5000);
       }
     } catch (e) { await SF.ask('Export failed', esc(e.message || String(e)), 'OK', false); }

@@ -257,7 +257,7 @@
   /* ---------- cover (full wrap: back + spine + front, with bleed) ---------- */
   SF.coverInfo = function (book, total) {
     var t = SF.trim(book.trim), sp = SF.spineIn(total, book.paper), b = SF.BLEED;
-    return { spine: sp, width: b + t.w + sp + t.w + b, height: b + t.h + b, hasSpineText: total >= 79 };
+    return { spine: sp, width: b + t.w + sp + t.w + b, height: b + t.h + b, hasSpineText: total > 79 };
   };
   SF.buildCover = async function (book, deps) {
     var P = deps.PDFLib, plan = SF.makePlan(book), total = plan.total, ci = SF.coverInfo(book, total);
@@ -282,7 +282,7 @@
     if (!book.coverHasTitle) {
     // title band on the front
     var fcx = frontX + (tw + b) / 2 - 0 , safeW = tw - 1.0 * IN, bandH = Math.min(3.0 * IN, fh * 0.34);
-    page.drawRectangle({ x: frontX, y: H - bandH - 0, width: fw, height: bandH, color: navy, opacity: 0.78 });
+    page.drawRectangle({ x: frontX, y: H - bandH - 0, width: fw, height: bandH, color: navy });
     var tt = shrinkLines(dispB, book.title || 'Untitled', safeW, 58, 24), ty = H - b - 0.45 * IN;
     tt.lines.forEach(function (ln) { ty -= tt.size; drawCentered(P, page, dispB, ln, tt.size, frontX + tw / 2, ty, white); ty -= tt.size * 0.18; });
     if (book.subtitle) {
@@ -290,7 +290,7 @@
       ty -= 8; sl.forEach(function (ln) { ty -= 20; drawCentered(P, page, body, ln, 17, frontX + tw / 2, ty, hex(P, '#FFD27A')); });
     }
     if (book.author) {
-      page.drawRectangle({ x: frontX, y: 0, width: fw, height: b + 0.8 * IN, color: navy, opacity: 0.7 });
+      page.drawRectangle({ x: frontX, y: 0, width: fw, height: b + 0.8 * IN, color: navy });
       drawCentered(P, page, dispB, book.author, 22, frontX + tw / 2, b + 0.3 * IN, white);
     }
     }
@@ -326,7 +326,11 @@
     var bl = book.bleed === false ? 0 : SF.BLEED;
     add('ok', 'Trim ' + t.w + ' × ' + t.h + ' in; PDF page ' + (t.w + bl).toFixed(3) + ' × ' + (t.h + 2 * bl).toFixed(3) + ' in' + (bl ? ' (0.125 in bleed on outer, top and bottom edges)' : ' (no bleed)'));
     add('ok', 'Gutter margin ' + SF.gutterIn(n) + ' in minimum for ' + n + ' pages; text kept 0.6 in from the outer edges');
-    add('ok', 'Fonts are embedded (subset) in the PDF');
+    add('ok', 'Fonts are embedded (subset) in the PDF; no transparency, crop marks, comments or watermarks');
+    add(t.w >= 4 && t.w <= 8.5 && t.h >= 6 && t.h <= 11.69 ? 'ok' : 'fail', 'Trim size ' + t.w + ' × ' + t.h + ' in is accepted by KDP paperbacks (width 4–8.5 in, height 6–11.69 in)');
+    add('ok', 'Odd pages on the right, even pages on the left; outside margin 0.6 in (KDP needs 0.375 in with bleed)');
+    add('ok', 'Smallest text in the PDF is 11 pt (KDP minimum is 7 pt)');
+    add('ok', 'Cover: ' + (SF.coverInfo(book, n).width).toFixed(3) + ' × ' + (SF.coverInfo(book, n).height).toFixed(3) + ' in = bleed + back + spine (' + SF.spineIn(n, book.paper).toFixed(4) + ' in) + front + bleed; white 2 × 1.2 in barcode area on the back');
     if (stats && stats.images) {
       var miss = stats.images.need - stats.images.have;
       add(miss === 0 ? 'ok' : 'fail', miss === 0 ? 'All ' + stats.images.need + ' pictures are ready' : miss + ' of ' + stats.images.need + ' pictures are still missing');
@@ -340,8 +344,11 @@
     add(book.title && book.title.length <= 200 ? 'ok' : 'fail', 'Title length ' + (book.title || '').length + '/200');
     add(book.author ? 'ok' : 'warn', book.author ? 'Author name set' : 'Set the author name (title page and cover)');
     add('info', 'In KDP > Content, answer "Yes" to AI-generated text and AI-generated images (KDP requires this disclosure for every title).');
-    add('info', 'KDP limits titles with AI-generated content to 3 new titles per day per account.');
-    if (n < 79) add('info', 'Spine text is not allowed under 79 pages; the cover uses a plain spine.');
+    add('info', 'KDP limits how many new titles you can create and submit each week per format. The limits reset every Sunday at 00:00 UTC.');
+    add('info', 'KDP > Content, in this order: (1) get a free KDP ISBN, (2) ' + pp.label + ', (3) trim ' + t.w + ' × ' + t.h + ' in, (4) Bleed (PDF only), (5) upload the INTERIOR first, then the cover (the cover size depends on the page count), (6) leave "my cover has a barcode" unchecked, (7) Launch Previewer, then Approve.');
+    add('info', 'AI disclosure: Texts = entire work with minimal or no editing; Images = many AI-generated images with minimal or no editing. Name the real tools you used.');
+    add('info', 'Do not tick "Low-content book" or "Large-print book". Pick reading age to match your story, and 2–3 categories that really fit.');
+    if (n <= 79) add('info', 'KDP prints spine text only on books with more than 79 pages; the cover uses a plain spine.');
     return out;
   };
 })();
