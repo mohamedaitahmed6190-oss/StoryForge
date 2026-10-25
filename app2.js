@@ -294,6 +294,7 @@
     }
     if (book.author) outlined(dispB, book.author, 22, frontX + tw / 2, b + 0.32 * IN, white);
     }
+    if (book.coverHasTitle && book.coverFixAuthor && book.author) outlined(dispB, book.author, 22, frontX + tw / 2, b + 0.32 * IN, white);
     // back cover
     var light_bg = lum(back) > 0.6, tc = light_bg ? navy : white, bx = b + 0.6 * IN, bw = tw - 1.2 * IN;
     if (book.backCover) {

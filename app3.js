@@ -94,6 +94,11 @@
       var u = g.createLinearGradient(0, pxH * 0.84, 0, pxH); u.addColorStop(0, 'rgba(10,16,36,0)'); u.addColorStop(1, 'rgba(10,16,36,0.75)');
       g.fillStyle = u; g.fillRect(0, pxH * 0.84, pxW, pxH * 0.16);
     }
+    if (scrim === 'author') {             // hide the author line the AI painted: solid dark strip at the bottom (our own name is drawn over it)
+      var a = g.createLinearGradient(0, pxH * 0.80, 0, pxH * 0.87); a.addColorStop(0, 'rgba(10,16,36,0)'); a.addColorStop(1, 'rgba(10,16,36,1)');
+      g.fillStyle = a; g.fillRect(0, pxH * 0.80, pxW, pxH * 0.07);
+      g.fillStyle = '#0a1024'; g.fillRect(0, pxH * 0.87, pxW, pxH * 0.13);
+    }
     var out = await new Promise(function (r) { c.toBlob(r, 'image/jpeg', 0.92); });
     var buf = new Uint8Array(await out.arrayBuffer()); c.width = c.height = 1;
     return buf;

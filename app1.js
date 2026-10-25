@@ -367,7 +367,7 @@
   function renderPics() {
     var keys = imageKeys(), have = keys.filter(function (k) { return IM[k]; }).length;
     $$('input[name=upfit]').forEach(function (r) { r.checked = r.value === (B.upFit || 'fill'); });
-    coverFallback(); $('#coverHasT').checked = !!B.coverHasTitle; $('#coverPrompt').value = B.cover.prompt; $('#coverDel').disabled = !IM.cover;
+    coverFallback(); $('#coverHasT').checked = !!B.coverHasTitle; $('#coverFixA').checked = !!B.coverFixAuthor; $('#coverPrompt').value = B.cover.prompt; $('#coverDel').disabled = !IM.cover;
     $('#picInfo').textContent = B.stories.length ? have + ' of ' + keys.length + ' pictures ready. Each picture takes about 10 seconds. Left page is the text, right page is the picture. You can also upload your own picture for any page (only use pictures you have the right to use).' : 'Write your story first (step 1).';
     $('#btnAllPics').disabled = !B.stories.length;
     $('#spreads').innerHTML = B.stories.map(function (s, i) {
@@ -520,7 +520,7 @@
     try {
       xgen(true, 'Loading tools…', 0.03); await SF.loadLibs();
       var deps = { PDFLib: window.PDFLib, fontkit: window.fontkit, loadFont: SF.loadFont,
-        getImage: function (key, w, h) { return IM[key] ? SF.prepImage(IM[key].blob, w, h, key === 'cover' && !B.coverHasTitle) : Promise.resolve(null); },
+        getImage: function (key, w, h) { return IM[key] ? SF.prepImage(IM[key].blob, w, h, key === 'cover' && (!B.coverHasTitle ? true : (B.coverFixAuthor ? 'author' : false))) : Promise.resolve(null); },
         onProgress: function (i, n) { xgen(true, 'Building page ' + Math.min(i + 1, n) + ' of ' + n + '…', 0.05 + 0.9 * i / n); } };
       var sb = sfBook(), name = SF.slug(B.title);
       if (kind === 'cover') {
@@ -627,6 +627,7 @@
     $('#btnAllPics').onclick = function () { runPics(missing()); };
     $('#btnStopPics').onclick = function () { picStop = true; };
     $('#coverHasT').addEventListener('change', function (e) { B.coverHasTitle = e.target.checked; save(); });
+    $('#coverFixA').addEventListener('change', function (e) { B.coverFixAuthor = e.target.checked; save(); });
     $('#coverPrompt').addEventListener('input', function (e) { B.cover.prompt = e.target.value; save(); });
     $('#coverIm').addEventListener('click', function (e) { if (e.target.closest('.regen')) { B.seeds.cover = 1 + Math.floor(Math.random() * 2000000000); runPics(['cover']).then(renderPics); } });
     $('#coverDel').onclick = function () { delPic('cover'); };
