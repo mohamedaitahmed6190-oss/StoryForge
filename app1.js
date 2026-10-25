@@ -20,7 +20,7 @@
 
   /* ---------- book model ---------- */
   function newBook() {
-    return { id: 'b' + Date.now().toString(36), idea: '', age: '6-8', nStories: 7, beats: 3, lang: 'English', style: '3d', trim: '8.5x8.5', paper: 'premium',
+    return { id: 'b' + Date.now().toString(36), idea: '', age: '6-8', nStories: 7, beats: 3, lang: 'English', style: '3d', trim: '8.5x8.5', paper: 'premium', kdpFormat: 'paperback', showSeries: false, seriesName: '', seriesNo: '',
       bleed: true, aiNotice: true, author: '', cast: '', year: new Date().getFullYear(), title: '', subtitle: '', tagline: '', dedication: '',
       characters: [], stories: [], cover: { prompt: '' }, listing: null, backColor: '#16213E', seeds: {}, srcPx: 1024, upPx: {}, upFit: 'whole' };
   }
@@ -90,12 +90,33 @@
   /* ---------- step 1: idea ---------- */
   function fillSelects() {
     $('#style').innerHTML = Object.keys(STYLES).map(function (k) { return '<option value="' + k + '">' + esc(STYLES[k].label) + '</option>'; }).join('');
-    $('#trim').innerHTML = SF.TRIMS.map(function (t) { return '<option value="' + t.id + '">' + esc(t.label) + '</option>'; }).join('');
-    $('#paper').innerHTML = SF.PAPERS.map(function (p) { return '<option value="' + p.id + '">' + esc(p.label) + '</option>'; }).join('');
+    fillFormatSelects();
     $('#chips').innerHTML = EXAMPLES.map(function (e, i) { return '<button type="button" class="chip" data-i="' + i + '">' + esc(e) + '</button>'; }).join('');
+  }
+  var FMT_NOTE = {
+    paperback: 'Paperback: pick a trim size. The cover is back + spine + front with 0.125 in bleed, and the spine grows with the page count.',
+    hardcover: 'Hardcover: 75 to 550 pages, Premium color only. The cover is a case-laminate wrap (0.591 in around the board), so it has its own size. Check it against the KDP hardcover template before you upload.',
+    ebook: 'Kindle eBook: every page is 1600 × 2560 px (square picture 1600 × 1600 px with the story text under it). You get an EPUB and a 1600 × 2560 px cover JPG. No bleed, spine, barcode or page minimum.'
+  };
+  function fillFormatSelects() {
+    var fm = SF.fmt(B || {});
+    $('#trim').innerHTML = SF.trimsFor(fm).map(function (t) { return '<option value="' + t.id + '">' + esc(t.label) + '</option>'; }).join('');
+    $('#paper').innerHTML = SF.papersFor(fm).map(function (p) { return '<option value="' + p.id + '">' + esc(p.label) + '</option>'; }).join('');
+  }
+  function renderFormat() {
+    var fm = SF.fmt(B);
+    if (!SF.trimsFor(fm).some(function (t) { return t.id === B.trim; })) B.trim = SF.defaultTrim(fm);
+    if (fm === 'hardcover' && B.paper === 'standard') B.paper = 'premium';
+    fillFormatSelects();
+    $$('#fmtCards [data-fmt]').forEach(function (el) { var on = el.dataset.fmt === 'series' ? !!B.showSeries : el.dataset.fmt === fm; el.classList.toggle('on', on); el.setAttribute('aria-pressed', on ? 'true' : 'false'); });
+    $('#seriesBox').hidden = !B.showSeries; $('#seriesName').value = B.seriesName || ''; $('#seriesNo').value = B.seriesNo || '';
+    $('#trim').value = B.trim; $('#paper').value = B.paper;
+    $('#paperField').hidden = fm === 'ebook'; $('#bleedChk').hidden = fm === 'ebook';
+    $('#fmtNote').textContent = FMT_NOTE[fm];
   }
   var FIELDS = { idea: 'idea', cast: 'cast', nStories: 'nStories', beats: 'beats', lang: 'lang', style: 'style', trim: 'trim', paper: 'paper', author: 'author' };
   function fillIdea() {
+    renderFormat();
     Object.keys(FIELDS).forEach(function (id) { $('#' + id).value = B[FIELDS[id]]; });
     $('#bleed').checked = B.bleed !== false; $('#aiNotice').checked = !!B.aiNotice;
     $$('input[name=age]').forEach(function (r) { r.checked = r.value === B.age; });
@@ -105,18 +126,21 @@
     var id = e && e.target && e.target.id;
     if (id && FIELDS[id]) B[FIELDS[id]] = ['nStories', 'beats'].indexOf(id) >= 0 ? Math.max(1, Math.min(id === 'nStories' ? 12 : 4, parseInt(e.target.value, 10) || 1)) : e.target.value;
     if (id === 'bleed') B.bleed = e.target.checked;
+    if (id === 'seriesName') B.seriesName = e.target.value;
+    if (id === 'seriesNo') B.seriesNo = e.target.value;
     if (id === 'aiNotice') B.aiNotice = e.target.checked;
     if (e && e.target.name === 'age') B.age = e.target.value;
     setAspect(); estimate(); save();
   }
   function setAspect() {
-    var t = SF.trim(B.trim), bl = B.bleed === false ? 0 : SF.BLEED;
+    var t = SF.trim(B.trim), bl = SF.bleedOf(B);
     document.documentElement.style.setProperty('--ar', (t.w + bl) + '/' + (t.h + 2 * bl));
   }
   function estimate() {
-    var n = B.nStories, bt = B.beats, fake = { paper: B.paper, stories: [] };
+    var n = B.nStories, bt = B.beats, fake = { paper: B.paper, kdpFormat: B.kdpFormat, stories: [] };
     for (var i = 0; i < n; i++) { var o = { beats: [] }; for (var j = 0; j < bt; j++) o.beats.push({}); fake.stories.push(o); }
     var pl = SF.makePlan(fake);
+    if (SF.fmt(B) === 'ebook') { $('#estimate').textContent = 'About ' + pl.total + ' Kindle pages and ' + (n * bt + 1) + ' pictures (the cover included).'; return; }
     $('#estimate').textContent = 'About ' + pl.total + ' pages and ' + (n * bt + 1) + ' pictures (the cover included). ' + (pl.fillers ? pl.fillers + ' activity page' + (pl.fillers > 1 ? 's are' : ' is') + ' added to reach the KDP minimum. ' : '');
   }
 
@@ -142,7 +166,8 @@
   }
   function wantPrompt() { try { return localStorage.getItem('sf_cp') !== '0'; } catch (e) { return true; } }
   function sizeLine() {                          // only the KDP picture size, no scene or characters
-    var P = pageSize(), t = SF.trim(B.trim), bl = B.bleed === false ? 0 : SF.BLEED;
+    var P = pageSize(), t = SF.trim(B.trim), bl = SF.bleedOf(B);
+    if (SF.fmt(B) === 'ebook') return 'PICTURE SIZE: square, aspect ratio 1:1, ' + P.W + ' x ' + P.H + ' px for the Kindle page';
     return 'PICTURE SIZE: aspect ratio ' + P.ratio.toFixed(3) + ':1, which is ' + (t.w + bl).toFixed(3) + ' x ' + (t.h + 2 * bl).toFixed(3) + ' inches (' + P.W + ' x ' + P.H + ' px at 300 DPI) for Amazon KDP';
   }
   function copyPage(i, j) {
@@ -391,7 +416,7 @@
   async function oneImage(key) {
     var bf = buildFor(key), url = '/api/ai?prompt=' + encodeURIComponent(bf.prompt) + '&seed=' + seedFor(key), init;
     if (bf.refs.length) {
-      var sz = SF.trim(B.trim), bl2 = B.bleed === false ? 0 : SF.BLEED, w = sz.w + bl2, h = sz.h + 2 * bl2, kk = 1280 / Math.max(w, h), fd = new FormData();
+      var pz = pageSize(key), w = pz.W, h = pz.H, kk = 1280 / Math.max(w, h), fd = new FormData();
       fd.append('prompt', bf.prompt); fd.append('seed', String(seedFor(key)));
       fd.append('width', String(Math.round(w * kk / 16) * 16)); fd.append('height', String(Math.round(h * kk / 16) * 16));
       bf.refs.forEach(function (r, k) { fd.append('input_image_' + k, r, 'ref' + k + '.jpg'); });
@@ -421,14 +446,15 @@
     await SF.store.delImg(B.id, key).catch(function () {}); save(); renderPics(); SF.toast('Picture deleted.');
   }
   var upKey = '', upIn;
-  function pageSize() {                          // exact KDP page (with bleed) in 300 DPI pixels
-    var t = SF.trim(B.trim), bl = B.bleed === false ? 0 : SF.BLEED, w = t.w + bl, h = t.h + 2 * bl, k = Math.min(1, 3500 / (Math.max(w, h) * SF.DPI));
+  function pageSize(key) {                       // exact KDP page (with bleed) in 300 DPI pixels
+    if (SF.fmt(B) === 'ebook') return key === 'cover' ? { W: SF.EBOOK.coverW, H: SF.EBOOK.coverH, ratio: SF.EBOOK.coverW / SF.EBOOK.coverH } : { W: SF.EBOOK.picW, H: SF.EBOOK.picH, ratio: 1 };
+    var t = SF.trim(B.trim), bl = SF.bleedOf(B), w = t.w + bl, h = t.h + 2 * bl, k = Math.min(1, 3500 / (Math.max(w, h) * SF.DPI));
     return { W: Math.round(w * SF.DPI * k), H: Math.round(h * SF.DPI * k), ratio: w / h };
   }
   async function useUpload(file) {
     var key = upKey; if (!file || !key) return;
     try {
-      var bm = await createImageBitmap(file), P = pageSize(), c = document.createElement('canvas'), x = c.getContext('2d'), eff;
+      var bm = await createImageBitmap(file), P = pageSize(key), c = document.createElement('canvas'), x = c.getContext('2d'), eff;
       c.width = P.W; c.height = P.H;
       if ((B.upFit || 'whole') === 'whole') {
         if (Math.abs((bm.width / bm.height) / P.ratio - 1) <= 0.04) {
@@ -487,7 +513,12 @@
   function renderExport() {
     var sb = sfBook(), pl = SF.makePlan(sb), ci = SF.coverInfo(sb, pl.total), keys = imageKeys();
     var have = keys.filter(function (k) { return IM[k]; }).length;
-    $('#sumLine').innerHTML = '<span>' + pl.total + '<small>pages</small></span><span>' + have + '/' + keys.length + '<small>pictures</small></span><span>' + ci.spine.toFixed(3) + ' in<small>spine</small></span><span>' + ci.width.toFixed(3) + ' × ' + ci.height.toFixed(3) + ' in<small>cover with bleed</small></span>';
+    var fm = SF.fmt(sb);
+    $('#btnInterior').textContent = fm === 'ebook' ? 'Download eBook (EPUB)' : 'Download interior PDF';
+    $('#btnCover').textContent = fm === 'ebook' ? 'Download cover (JPG)' : fm === 'hardcover' ? 'Download hardcover cover PDF' : 'Download cover PDF';
+    $('#sumLine').innerHTML = '<span>' + pl.total + '<small>pages</small></span><span>' + have + '/' + keys.length + '<small>pictures</small></span>' + (fm === 'ebook'
+      ? '<span>' + ci.width + ' × ' + ci.height + ' px<small>Kindle cover</small></span>'
+      : '<span>' + ci.spine.toFixed(3) + ' in<small>spine</small></span><span>' + ci.width.toFixed(3) + ' × ' + ci.height.toFixed(3) + ' in<small>' + (fm === 'hardcover' ? 'hardcover wrap' : 'cover with bleed') + '</small></span>');
     var stats = { images: { have: have, need: keys.length }, srcPx: have ? Math.min.apply(null, [B.srcPx].concat(Object.keys(B.upPx || {}).filter(function (k) { return IM[k]; }).map(function (k) { return B.upPx[k]; }))) : 0, ipHits: SF.ipHits(allText()) };
     var ic = { ok: '✓', warn: '!', fail: '✕', info: 'i' };
     $('#checks').innerHTML = SF.runChecks(sb, stats).map(function (c) { return '<li><span class="i ' + c.level + '">' + ic[c.level] + '</span><span>' + esc(c.text) + '</span></li>'; }).join('');
@@ -539,20 +570,34 @@
     var cts = coverTitleState();
     if (cts === 'mismatch' && !(await SF.ask('Cover title is different', 'The picture shows <b>' + esc(B.coverTitleText) + '</b> but the book title is <b>' + esc(B.title) + '</b>. KDP compares the cover title with the title page and the title you enter in KDP, and rejects books that do not match. Fix one of them, or export anyway.', 'Export anyway', 'Go back'))) return;
     if (cts === 'empty' && kind === 'cover' && !(await SF.ask('Check the cover title', 'You said the picture already shows the title. Type that title under the cover options so I can check it is the same as the book title <b>' + esc(B.title) + '</b>.', 'Export anyway', 'Go back'))) return;
-    var miss = kind === 'cover' ? (IM.cover ? [] : ['cover']) : missing().filter(function (k) { return k !== 'cover'; });
+    var fm = SF.fmt(B), miss = kind === 'cover' ? (IM.cover ? [] : ['cover']) : (fm === 'ebook' ? missing() : missing().filter(function (k) { return k !== 'cover'; }));
     if (miss.length && !(await SF.ask(kind === 'cover' ? 'Cover picture missing' : miss.length + ' pictures missing', 'Missing pictures print as grey placeholders. Make them first in step 3, or export anyway.', 'Export anyway', 'Go back'))) return;
     if (!String(B.author || '').trim() && !(await SF.ask('Author name missing', 'Your name is not on the title page, the copyright page or the cover. Add it in step 1 (Print setup, Author name) first.', 'Export anyway', 'Go back'))) return;
     exporting = true; $('#btnInterior').disabled = $('#btnCover').disabled = true;
     try {
+      var sb = sfBook(), name = SF.slug(B.title);
+      if (fm === 'ebook') {                                     // Kindle: EPUB + cover JPG, no PDF tools needed
+        var getBlob = function (k) { return IM[k] ? IM[k].blob : null; };
+        if (kind === 'cover') {
+          xgen(true, 'Building the Kindle cover…', 0.3);
+          var cj = await SF.buildEbookCover(sb, { getBlob: getBlob });
+          SF.download(await SF.setJpegDpi(new Blob([cj], { type: 'image/jpeg' }), 300), name + '-kindle-cover.jpg', 'image/jpeg');
+          SF.toast('Kindle cover ready: ' + SF.EBOOK.coverW + ' × ' + SF.EBOOK.coverH + ' px.', 5000);
+        } else {
+          var er = await SF.buildEpub(sb, { getBlob: getBlob, onProgress: function (i, n) { xgen(true, 'Building Kindle page ' + Math.min(i, n) + ' of ' + n + '…', 0.05 + 0.9 * i / n); } });
+          SF.download(er.epub, name + '.epub', 'application/epub+zip');
+          SF.toast('Kindle EPUB ready (' + (er.epub.length / 1048576).toFixed(1) + ' MB). Check it in Kindle Previewer.', 6000);
+        }
+        xgen(false); exporting = false; $('#btnInterior').disabled = $('#btnCover').disabled = false; return;
+      }
       xgen(true, 'Loading tools…', 0.03); await SF.loadLibs();
       var deps = { PDFLib: window.PDFLib, fontkit: window.fontkit, loadFont: SF.loadFont,
-        getImage: function (key, w, h) { return IM[key] ? SF.prepImage(IM[key].blob, w, h, key === 'cover' && (!B.coverHasTitle ? true : (B.coverFixAuthor ? 'author' : false))) : Promise.resolve(null); },
+        getImage: function (key, w, h, face) { return IM[key] ? SF.prepImage(IM[key].blob, w, h, key === 'cover' && (!B.coverHasTitle ? true : (B.coverFixAuthor ? 'author' : false)), key === 'cover' ? face : undefined) : Promise.resolve(null); },
         onProgress: function (i, n) { xgen(true, 'Building page ' + Math.min(i + 1, n) + ' of ' + n + '…', 0.05 + 0.9 * i / n); } };
-      var sb = sfBook(), name = SF.slug(B.title);
       if (kind === 'cover') {
         xgen(true, 'Building the cover…', 0.3);
-        var r = await SF.buildCover(sb, deps); SF.download(r.bytes, name + '-cover.pdf');
-        SF.toast('Cover PDF ready: ' + r.info.width.toFixed(3) + ' × ' + r.info.height.toFixed(3) + ' in.', 5000);
+        var r = await SF.buildCover(sb, deps); SF.download(r.bytes, name + (fm === 'hardcover' ? '-hardcover-cover.pdf' : '-cover.pdf'));
+        SF.toast((fm === 'hardcover' ? 'Hardcover cover PDF ready: ' : 'Cover PDF ready: ') + r.info.width.toFixed(3) + ' × ' + r.info.height.toFixed(3) + ' in.', 5000);
       } else {
         var bytes = await SF.buildInterior(sb, deps);
         if (bytes.length > 650 * 1048576) throw new Error('The interior PDF is ' + (bytes.length / 1048576).toFixed(0) + ' MB. KDP accepts files up to 650 MB. Use fewer pages or smaller pictures.');
@@ -627,6 +672,13 @@
   function bind() {
     $('#p1').addEventListener('input', readIdea); $('#p1').addEventListener('change', readIdea);
     $('#chips').addEventListener('click', function (e) { var c = e.target.closest('.chip'); if (!c) return; B.idea = EXAMPLES[+c.dataset.i]; $('#idea').value = B.idea; save(); });
+    $('#fmtCards').addEventListener('click', function (e) {
+      var b = e.target.closest('[data-fmt]'); if (!b) return;
+      var before = SF.fmt(B), id = b.dataset.fmt;
+      if (id === 'series') B.showSeries = !B.showSeries; else B.kdpFormat = id;
+      renderFormat(); setAspect(); estimate(); save(); if (step === 4) renderExport();
+      if (id !== 'series' && id !== before && Object.keys(B.upPx || {}).length) SF.toast('Pictures you uploaded were fitted to the old size. They are trimmed to the new size when you export.', 6000);
+    });
     $('#btnWrite').onclick = writeBook;
     $('#genStop').onclick = function () { genStop = true; $('#genT').textContent = 'Stopping…'; };
     $('#bookForm').addEventListener('input', onStoryInput);

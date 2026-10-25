@@ -145,6 +145,13 @@ details.sceneEd summary{cursor:pointer;color:var(--dim);font-size:13px;margin:-6
 .lst .f .h label{font-weight:700;font-size:13.5px;color:var(--soft)}
 .cnt{font-size:12px;color:var(--dim)}
 .cnt.bad{color:var(--bad);font-weight:700}
+.fmt{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fmt button{font:inherit;text-align:left;background:var(--card);color:var(--ink);border:1.5px solid var(--line);border-radius:14px;padding:12px 14px;min-height:64px;cursor:pointer;display:flex;flex-direction:column;gap:2px}
+.fmt button b{font-size:16px}.fmt button small{color:var(--dim);font-size:12.5px}
+.fmt button.on{border-color:var(--amber);background:linear-gradient(135deg,rgba(255,181,71,.16),rgba(255,111,89,.12))}
+.fmt button.on small{color:var(--soft)}
+.fmt button:focus-visible{outline:3px solid var(--amber);outline-offset:2px}
+.seriesbox{margin-top:12px;padding:12px 14px;border:1px dashed var(--line);border-radius:14px}
 .hint.bad{color:var(--bad);font-weight:700}
 
 dialog{border:1px solid var(--line);border-radius:18px;padding:22px;max-width:min(440px,92vw);background:var(--card);color:var(--ink);box-shadow:0 30px 60px -20px rgba(0,0,0,.8)}
@@ -205,13 +212,29 @@ dialog .btns{justify-content:flex-end;margin-bottom:0}
       <div class="field"><label for="lang">Language</label>
         <select id="lang"><option>English</option><option>French</option><option>Spanish</option><option>German</option><option>Italian</option><option>Portuguese</option></select></div>
     </div>
+    <div class="field fmtbox"><label id="fmtLbl">KDP format</label>
+      <div class="fmt" id="fmtCards" role="group" aria-labelledby="fmtLbl">
+        <button type="button" data-fmt="paperback" aria-pressed="true"><b>Paperback</b><small>Print · 24+ pages</small></button>
+        <button type="button" data-fmt="hardcover" aria-pressed="false"><b>Hardcover</b><small>Print · 75–550 pages</small></button>
+        <button type="button" data-fmt="ebook" aria-pressed="false"><b>Kindle eBook</b><small>Digital · 1600 × 2560 px</small></button>
+        <button type="button" data-fmt="series" aria-pressed="false"><b>Series page</b><small>No size · links books</small></button>
+      </div>
+      <div class="hint" id="fmtNote"></div>
+      <div class="seriesbox" id="seriesBox" hidden>
+        <div class="row stack">
+          <div class="field"><label for="seriesName">Series title</label><input type="text" id="seriesName" maxlength="200" placeholder="e.g. The Lost Island Adventures"></div>
+          <div class="field"><label for="seriesNo">Book number</label><input type="text" id="seriesNo" maxlength="4" inputmode="numeric" placeholder="1"></div>
+        </div>
+        <div class="hint">A Series page has no size and no file. It links your paperback, hardcover and eBook under one series on Amazon. Use the same series name on every book, then add it in KDP with "Add series details".</div>
+      </div>
+    </div>
     <details class="more"><summary>Print setup</summary>
       <div class="field"><label for="author">Author name</label><input type="text" id="author" autocomplete="name" placeholder="Shown on the title page and the cover"></div>
       <div class="row stack">
         <div class="field"><label for="trim">Trim size</label><select id="trim"></select></div>
-        <div class="field"><label for="paper">Paper and ink</label><select id="paper"></select></div>
+        <div class="field" id="paperField"><label for="paper">Paper and ink</label><select id="paper"></select></div>
       </div>
-      <div class="chk"><input type="checkbox" id="bleed" checked><label for="bleed"><b>Pictures run to the page edge (bleed)</b><div class="hint">Adds 0.125 in around the outer edges, as KDP requires for full-page art.</div></label></div>
+      <div class="chk" id="bleedChk"><input type="checkbox" id="bleed" checked><label for="bleed"><b>Pictures run to the page edge (bleed)</b><div class="hint">Adds 0.125 in around the outer edges, as KDP requires for full-page art.</div></label></div>
       <div class="chk"><input type="checkbox" id="aiNotice" checked><label for="aiNotice"><b>Mention AI help on the copyright page</b><div class="hint">KDP asks you to disclose AI-generated text and images in its own form either way.</div></label></div>
     </details>
     <div class="btns"><button class="btn red" id="btnWrite">Write my book</button><button class="btn ghost danger" id="btnReset2">Delete all and start over</button></div>
@@ -281,8 +304,9 @@ dialog .btns{justify-content:flex-end;margin-bottom:0}
 <dialog id="booksDlg"><h3>My books</h3><div class="books" id="booksList"></div><div class="btns" style="justify-content:flex-start"><button class="btn sm red" id="booksBook2">Load Book 2: The Moonlight Map</button><button class="btn sm ghost" id="booksImport">Import file</button></div><div class="btns"><button class="btn ghost" id="booksClose">Close</button><button class="btn" id="booksNew">New book</button></div></dialog>
 <div id="toast" role="status" aria-live="polite"></div>
 
-<script src="app3.js?v=4"></script>
-<script src="app2.js?v=10"></script>
-<script src="app1.js?v=23"></script>
+<script src="app3.js?v=5"></script>
+<script src="app2.js?v=11"></script>
+<script src="app4.js?v=1"></script>
+<script src="app1.js?v=24"></script>
 </body>
 </html>

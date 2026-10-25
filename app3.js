@@ -74,31 +74,49 @@
 
   /* ---------- image processing for print ---------- */
   // Crops to the exact page shape, resamples to the pixel size that gives 300 DPI, gently sharpens, returns JPEG bytes.
-  SF.prepImage = async function (blob, pxW, pxH, scrim) {
+  // face (optional): where the sharp picture goes inside the canvas, as fractions {x,y,w,h} of the canvas, or 'contain' (the whole picture, centred).
+  // The rest of the canvas gets a soft blurred extension of the same picture (hardcover wrap, Kindle cover).
+  SF.prepCanvas = async function (blob, pxW, pxH, scrim, face) {
     var bmp = await createImageBitmap(blob);
     var c = document.createElement('canvas'); c.width = pxW; c.height = pxH;
     var g = c.getContext('2d'); g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high';
-    var s = Math.max(pxW / bmp.width, pxH / bmp.height), sw = pxW / s, sh = pxH / s;
+    if (face === 'contain') {
+      var kc = Math.min(pxW / bmp.width, pxH / bmp.height), cw = bmp.width * kc, ch = bmp.height * kc;
+      face = Math.abs((bmp.width / bmp.height) / (pxW / pxH) - 1) <= 0.04 ? null : { x: (pxW - cw) / 2 / pxW, y: (pxH - ch) / 2 / pxH, w: cw / pxW, h: ch / pxH };
+    }
+    var fx = 0, fy = 0, fw = pxW, fh = pxH;
+    if (face) {
+      fx = Math.round(face.x * pxW); fy = Math.round(face.y * pxH); fw = Math.round(face.w * pxW); fh = Math.round(face.h * pxH);
+      var kb = Math.max(pxW / bmp.width, pxH / bmp.height);
+      try { g.filter = 'blur(' + Math.round(pxW / 70) + 'px)'; } catch (e) {}
+      g.drawImage(bmp, (pxW - bmp.width * kb) / 2, (pxH - bmp.height * kb) / 2, bmp.width * kb, bmp.height * kb); g.filter = 'none';
+      g.fillStyle = 'rgba(0,0,0,.14)'; g.fillRect(0, 0, pxW, pxH);
+    }
+    var s = Math.max(fw / bmp.width, fh / bmp.height), sw = fw / s, sh = fh / s;
     var sx = (bmp.width - sw) / 2, sy = (bmp.height - sh) / 2;
     // upscale in two steps (softer result than one big jump)
     if (s > 2) {
       var m = document.createElement('canvas'); m.width = Math.round(sw * 2); m.height = Math.round(sh * 2);
       var mg = m.getContext('2d'); mg.imageSmoothingQuality = 'high'; mg.drawImage(bmp, sx, sy, sw, sh, 0, 0, m.width, m.height);
-      g.drawImage(m, 0, 0, m.width, m.height, 0, 0, pxW, pxH); m.width = m.height = 1;
-    } else g.drawImage(bmp, sx, sy, sw, sh, 0, 0, pxW, pxH);
+      g.drawImage(m, 0, 0, m.width, m.height, fx, fy, fw, fh); m.width = m.height = 1;
+    } else g.drawImage(bmp, sx, sy, sw, sh, fx, fy, fw, fh);
     if (bmp.close) bmp.close();
     sharpen(g, pxW, pxH, 0.45);
     if (scrim) {                          // dark fade behind the title (baked into the picture, so the PDF has no transparency)
-      var t = g.createLinearGradient(0, 0, 0, pxH * 0.42); t.addColorStop(0, 'rgba(10,16,36,0.88)'); t.addColorStop(0.6, 'rgba(10,16,36,0.45)'); t.addColorStop(1, 'rgba(10,16,36,0)');
-      g.fillStyle = t; g.fillRect(0, 0, pxW, pxH * 0.42);
-      var u = g.createLinearGradient(0, pxH * 0.84, 0, pxH); u.addColorStop(0, 'rgba(10,16,36,0)'); u.addColorStop(1, 'rgba(10,16,36,0.75)');
-      g.fillStyle = u; g.fillRect(0, pxH * 0.84, pxW, pxH * 0.16);
+      var tb = fy + fh * 0.42, t = g.createLinearGradient(0, fy, 0, tb); t.addColorStop(0, 'rgba(10,16,36,0.88)'); t.addColorStop(0.6, 'rgba(10,16,36,0.45)'); t.addColorStop(1, 'rgba(10,16,36,0)');
+      g.fillStyle = t; g.fillRect(0, 0, pxW, tb);
+      var ub = fy + fh * 0.84, u = g.createLinearGradient(0, ub, 0, fy + fh); u.addColorStop(0, 'rgba(10,16,36,0)'); u.addColorStop(1, 'rgba(10,16,36,0.75)');
+      g.fillStyle = u; g.fillRect(0, ub, pxW, pxH - ub);
     }
     if (scrim === 'author') {             // hide the author line the AI painted: solid dark strip at the bottom (our own name is drawn over it)
-      var a = g.createLinearGradient(0, pxH * 0.80, 0, pxH * 0.87); a.addColorStop(0, 'rgba(10,16,36,0)'); a.addColorStop(1, 'rgba(10,16,36,1)');
-      g.fillStyle = a; g.fillRect(0, pxH * 0.80, pxW, pxH * 0.07);
-      g.fillStyle = '#0a1024'; g.fillRect(0, pxH * 0.87, pxW, pxH * 0.13);
+      var ab = fy + fh * 0.80, a = g.createLinearGradient(0, ab, 0, fy + fh * 0.87); a.addColorStop(0, 'rgba(10,16,36,0)'); a.addColorStop(1, 'rgba(10,16,36,1)');
+      g.fillStyle = a; g.fillRect(0, ab, pxW, fh * 0.07);
+      g.fillStyle = '#0a1024'; g.fillRect(0, fy + fh * 0.87, pxW, pxH - (fy + fh * 0.87));
     }
+    return c;
+  };
+  SF.prepImage = async function (blob, pxW, pxH, scrim, face) {
+    var c = await SF.prepCanvas(blob, pxW, pxH, scrim, face);
     var out = await new Promise(function (r) { c.toBlob(r, 'image/jpeg', 0.92); });
     var buf = new Uint8Array(await out.arrayBuffer()); c.width = c.height = 1;
     return buf;
