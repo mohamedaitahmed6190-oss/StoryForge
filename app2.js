@@ -279,26 +279,23 @@
     if (jb) page.drawImage(await doc.embedJpg(jb), { x: frontX, y: 0, width: fw, height: fh });
     else page.drawRectangle({ x: frontX, y: 0, width: fw, height: fh, color: hex(P, '#3A86FF') });
 
+    function outlined(font, text, size, cx, y, color) {
+      [[-2, 0], [2, 0], [0, -2], [0, 2], [-1.5, -1.5], [1.5, 1.5], [-1.5, 1.5], [1.5, -1.5]].forEach(function (o) { drawCentered(P, page, font, text, size, cx + o[0], y + o[1], hex(P, '#101830')); });
+      drawCentered(P, page, font, text, size, cx, y, color);
+    }
     if (!book.coverHasTitle) {
-    // title band on the front
-    var fcx = frontX + (tw + b) / 2 - 0 , safeW = tw - 1.0 * IN, bandH = Math.min(3.0 * IN, fh * 0.34);
-    page.drawRectangle({ x: frontX, y: H - bandH - 0, width: fw, height: bandH, color: navy });
+    // title straight on the picture (the picture already has a dark fade at the top and bottom)
+    var safeW = tw - 1.0 * IN;
     var tt = shrinkLines(dispB, book.title || 'Untitled', safeW, 58, 24), ty = H - b - 0.45 * IN;
-    tt.lines.forEach(function (ln) { ty -= tt.size; drawCentered(P, page, dispB, ln, tt.size, frontX + tw / 2, ty, white); ty -= tt.size * 0.18; });
+    tt.lines.forEach(function (ln) { ty -= tt.size; outlined(dispB, ln, tt.size, frontX + tw / 2, ty, white); ty -= tt.size * 0.18; });
     if (book.subtitle) {
       var sl = wrap(body, 17, book.subtitle, safeW).slice(0, 2);
-      ty -= 8; sl.forEach(function (ln) { ty -= 20; drawCentered(P, page, body, ln, 17, frontX + tw / 2, ty, hex(P, '#FFD27A')); });
+      ty -= 8; sl.forEach(function (ln) { ty -= 20; outlined(body, ln, 17, frontX + tw / 2, ty, hex(P, '#FFD27A')); });
     }
-    if (book.author) {
-      page.drawRectangle({ x: frontX, y: 0, width: fw, height: b + 0.8 * IN, color: navy });
-      drawCentered(P, page, dispB, book.author, 22, frontX + tw / 2, b + 0.3 * IN, white);
+    if (book.author) outlined(dispB, book.author, 22, frontX + tw / 2, b + 0.32 * IN, white);
     }
-    }
-
     if (book.coverHasTitle && book.author) {            // author name over the art, with a dark outline (no transparency)
-      var ay = b + 0.32 * IN, ax = frontX + tw / 2, au = String(book.author);
-      [[-2, 0], [2, 0], [0, -2], [0, 2], [-1.5, -1.5], [1.5, 1.5], [-1.5, 1.5], [1.5, -1.5]].forEach(function (o) { drawCentered(P, page, dispB, au, 22, ax + o[0], ay + o[1], hex(P, '#101830')); });
-      drawCentered(P, page, dispB, au, 22, ax, ay, white);
+      outlined(dispB, String(book.author), 22, frontX + tw / 2, b + 0.32 * IN, white);
     }
 
     // back cover

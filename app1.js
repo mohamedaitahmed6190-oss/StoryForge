@@ -520,7 +520,7 @@
     try {
       xgen(true, 'Loading tools…', 0.03); await SF.loadLibs();
       var deps = { PDFLib: window.PDFLib, fontkit: window.fontkit, loadFont: SF.loadFont,
-        getImage: function (key, w, h) { return IM[key] ? SF.prepImage(IM[key].blob, w, h) : Promise.resolve(null); },
+        getImage: function (key, w, h) { return IM[key] ? SF.prepImage(IM[key].blob, w, h, key === 'cover' && !B.coverHasTitle) : Promise.resolve(null); },
         onProgress: function (i, n) { xgen(true, 'Building page ' + Math.min(i + 1, n) + ' of ' + n + '…', 0.05 + 0.9 * i / n); } };
       var sb = sfBook(), name = SF.slug(B.title);
       if (kind === 'cover') {

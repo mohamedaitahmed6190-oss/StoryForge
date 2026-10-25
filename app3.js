@@ -74,7 +74,7 @@
 
   /* ---------- image processing for print ---------- */
   // Crops to the exact page shape, resamples to the pixel size that gives 300 DPI, gently sharpens, returns JPEG bytes.
-  SF.prepImage = async function (blob, pxW, pxH) {
+  SF.prepImage = async function (blob, pxW, pxH, scrim) {
     var bmp = await createImageBitmap(blob);
     var c = document.createElement('canvas'); c.width = pxW; c.height = pxH;
     var g = c.getContext('2d'); g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high';
@@ -88,6 +88,12 @@
     } else g.drawImage(bmp, sx, sy, sw, sh, 0, 0, pxW, pxH);
     if (bmp.close) bmp.close();
     sharpen(g, pxW, pxH, 0.45);
+    if (scrim) {                          // dark fade behind the title (baked into the picture, so the PDF has no transparency)
+      var t = g.createLinearGradient(0, 0, 0, pxH * 0.42); t.addColorStop(0, 'rgba(10,16,36,0.88)'); t.addColorStop(0.6, 'rgba(10,16,36,0.45)'); t.addColorStop(1, 'rgba(10,16,36,0)');
+      g.fillStyle = t; g.fillRect(0, 0, pxW, pxH * 0.42);
+      var u = g.createLinearGradient(0, pxH * 0.84, 0, pxH); u.addColorStop(0, 'rgba(10,16,36,0)'); u.addColorStop(1, 'rgba(10,16,36,0.75)');
+      g.fillStyle = u; g.fillRect(0, pxH * 0.84, pxW, pxH * 0.16);
+    }
     var out = await new Promise(function (r) { c.toBlob(r, 'image/jpeg', 0.92); });
     var buf = new Uint8Array(await out.arrayBuffer()); c.width = c.height = 1;
     return buf;
