@@ -8,8 +8,7 @@
     { id: '8.5x8.5',   w: 8.5,  h: 8.5,  label: '8.5 × 8.5 in — square (best for AI art)' },
     { id: '8.25x8.25', w: 8.25, h: 8.25, label: '8.25 × 8.25 in — square' },
     { id: '8x10',      w: 8,    h: 10,   label: '8 × 10 in — portrait' },
-    { id: '8.5x11',    w: 8.5,  h: 11,   label: '8.5 × 11 in — portrait' },
-    { id: '11x8.5',    w: 11,   h: 8.5,  label: '11 × 8.5 in — landscape (images get cropped)' }
+    { id: '8.5x11',    w: 8.5,  h: 11,   label: '8.5 × 11 in — portrait' }
   ];
   SF.PAPERS = [
     { id: 'premium',  label: 'Premium color',  k: 0.002347, minPages: 24 },
