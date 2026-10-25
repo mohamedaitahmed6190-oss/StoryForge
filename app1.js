@@ -125,6 +125,7 @@
   function readIdea(e) {
     var id = e && e.target && e.target.id;
     if (id && FIELDS[id]) B[FIELDS[id]] = ['nStories', 'beats'].indexOf(id) >= 0 ? Math.max(1, Math.min(id === 'nStories' ? 12 : 4, parseInt(e.target.value, 10) || 1)) : e.target.value;
+    if (e && e.type === 'change' && (id === 'nStories' || id === 'beats')) e.target.value = B[FIELDS[id]];      // show the number that is really used (the limit is 12 stories)
     if (id === 'bleed') B.bleed = e.target.checked;
     if (id === 'seriesName') B.seriesName = e.target.value;
     if (id === 'seriesNo') B.seriesNo = e.target.value;
