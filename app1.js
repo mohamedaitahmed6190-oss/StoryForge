@@ -368,7 +368,7 @@
   function renderPics() {
     var keys = imageKeys(), have = keys.filter(function (k) { return IM[k]; }).length;
     $$('input[name=upfit]').forEach(function (r) { r.checked = r.value === (B.upFit || 'whole'); });
-    coverFallback(); $('#coverHasT').checked = !!B.coverHasTitle; $('#coverFixA').checked = !!B.coverFixAuthor; $('#coverPrompt').value = B.cover.prompt; $('#coverDel').disabled = !IM.cover;
+    coverFallback(); $('#coverHasT').checked = !!B.coverHasTitle; $('#coverFixA').checked = !!B.coverFixAuthor; $('#coverTitleText').value = B.coverTitleText || ''; coverTitleCheck(); $('#coverPrompt').value = B.cover.prompt; $('#coverDel').disabled = !IM.cover;
     $('#picInfo').textContent = B.stories.length ? have + ' of ' + keys.length + ' pictures ready. Each picture takes about 10 seconds. Left page is the text, right page is the picture. You can also upload your own picture for any page (only use pictures you have the right to use).' : 'Write your story first (step 1).';
     $('#btnAllPics').disabled = !B.stories.length;
     $('#spreads').innerHTML = B.stories.map(function (s, i) {
@@ -517,9 +517,28 @@
     var s = $('[data-cnt="' + e.target.id + '"]'); if (s) updCnt(s); save();
   }
   function xgen(on, text, frac) { $('#xgen').classList.toggle('on', on); if (text) $('#xgenT').textContent = text; if (frac != null) $('#xgenB').style.width = Math.round(frac * 100) + '%'; }
+  // 'ok' | 'empty' | 'mismatch' | 'off' (the title printed by StoryForge itself can not differ)
+  function coverTitleState() {
+    if (!B.coverHasTitle) return 'off';
+    var t = String(B.coverTitleText || '').trim();
+    if (!t) return 'empty';
+    return SF.sameTitle(t, B.title) ? 'ok' : 'mismatch';
+  }
+  function coverTitleCheck() {
+    var box = $('#coverTitleBox'); if (!box) return;
+    var s = coverTitleState(), m = $('#coverTitleMsg');
+    box.hidden = s === 'off';
+    m.classList.toggle('bad', s === 'mismatch');
+    m.textContent = s === 'ok' ? 'The cover title matches the book title.'
+      : s === 'mismatch' ? 'Different from the book title "' + (B.title || '') + '". KDP can reject the book. Change the book title in step 2, or make a new cover picture with the right title.'
+      : 'KDP rejects books when the cover title is different from the book title (' + (B.title ? '"' + B.title + '"' : 'step 2') + ').';
+  }
   var exporting = false;
   async function exportPdf(kind) {
     if (exporting) return;
+    var cts = coverTitleState();
+    if (cts === 'mismatch' && !(await SF.ask('Cover title is different', 'The picture shows <b>' + esc(B.coverTitleText) + '</b> but the book title is <b>' + esc(B.title) + '</b>. KDP compares the cover title with the title page and the title you enter in KDP, and rejects books that do not match. Fix one of them, or export anyway.', 'Export anyway', 'Go back'))) return;
+    if (cts === 'empty' && kind === 'cover' && !(await SF.ask('Check the cover title', 'You said the picture already shows the title. Type that title under the cover options so I can check it is the same as the book title <b>' + esc(B.title) + '</b>.', 'Export anyway', 'Go back'))) return;
     var miss = kind === 'cover' ? (IM.cover ? [] : ['cover']) : missing().filter(function (k) { return k !== 'cover'; });
     if (miss.length && !(await SF.ask(kind === 'cover' ? 'Cover picture missing' : miss.length + ' pictures missing', 'Missing pictures print as grey placeholders. Make them first in step 3, or export anyway.', 'Export anyway', 'Go back'))) return;
     if (!String(B.author || '').trim() && !(await SF.ask('Author name missing', 'Your name is not on the title page, the copyright page or the cover. Add it in step 1 (Print setup, Author name) first.', 'Export anyway', 'Go back'))) return;
@@ -633,7 +652,8 @@
     $$('input[name=upfit]').forEach(function (r) { r.onchange = function () { B.upFit = r.value; save(); }; });
     $('#btnAllPics').onclick = function () { runPics(missing()); };
     $('#btnStopPics').onclick = function () { picStop = true; };
-    $('#coverHasT').addEventListener('change', function (e) { B.coverHasTitle = e.target.checked; save(); });
+    $('#coverHasT').addEventListener('change', function (e) { B.coverHasTitle = e.target.checked; save(); coverTitleCheck(); });
+    $('#coverTitleText').addEventListener('input', function (e) { B.coverTitleText = e.target.value; save(); coverTitleCheck(); });
     $('#coverFixA').addEventListener('change', function (e) { B.coverFixAuthor = e.target.checked; save(); });
     $('#coverPrompt').addEventListener('input', function (e) { B.cover.prompt = e.target.value; save(); });
     $('#coverIm').addEventListener('click', function (e) { if (e.target.closest('.regen')) { B.seeds.cover = 1 + Math.floor(Math.random() * 2000000000); runPics(['cover']).then(renderPics); } });

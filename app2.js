@@ -345,6 +345,12 @@
     if (stats && stats.overflow) add('warn', stats.overflow + ' text page(s) use very small type — shorten the text or use a bigger trim size');
     if (stats && stats.ipHits && stats.ipHits.length) add('fail', 'Trademark risk in your text: ' + stats.ipHits.join(', '));
     add(book.title && book.title.length <= 200 ? 'ok' : 'fail', 'Title length ' + (book.title || '').length + '/200');
+    if (book.coverHasTitle) {
+      var ct = String(book.coverTitleText || '').trim();
+      if (!ct) add('warn', 'The cover picture shows its own title. Type it under the cover options, so it can be checked against "' + (book.title || '') + '".');
+      else if (SF.sameTitle(ct, book.title)) add('ok', 'Cover title matches the book title: "' + book.title + '"');
+      else add('fail', 'Cover title "' + ct + '" is different from the book title "' + (book.title || '') + '". KDP rejects books when the cover, title page and KDP title do not match.');
+    }
     add(book.author ? 'ok' : 'fail', book.author ? 'Author name set' : 'Author name is missing: it is needed on the title page, copyright page and cover');
     var wc = [], sbs = book.stories || [];
     sbs.forEach(function (s) { (s.beats || []).forEach(function (b) { wc.push(String((b && b.text) || '').split(/\s+/).filter(Boolean).length); }); });

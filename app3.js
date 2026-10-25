@@ -185,6 +185,11 @@
       return new Blob([out], { type: 'image/jpeg' });
     } catch (e) { return blob; }
   };
+  // Same title? Ignores capital letters, accents, punctuation and extra spaces. "The Crystal Cave" and "Crystal Cave" are NOT the same (KDP compares them word for word).
+  SF.titleKey = function (t) {
+    return String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9؀-ۿ]+/g, ' ').trim();
+  };
+  SF.sameTitle = function (a, b) { return SF.titleKey(a) === SF.titleKey(b); };
   SF.download = function (bytes, name, type) {
     var url = URL.createObjectURL(new Blob([bytes], { type: type || 'application/pdf' }));
     var a = document.createElement('a'); a.href = url; a.download = name; document.body.appendChild(a); a.click();

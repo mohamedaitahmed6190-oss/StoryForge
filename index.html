@@ -145,6 +145,7 @@ details.sceneEd summary{cursor:pointer;color:var(--dim);font-size:13px;margin:-6
 .lst .f .h label{font-weight:700;font-size:13.5px;color:var(--soft)}
 .cnt{font-size:12px;color:var(--dim)}
 .cnt.bad{color:var(--bad);font-weight:700}
+.hint.bad{color:var(--bad);font-weight:700}
 
 dialog{border:1px solid var(--line);border-radius:18px;padding:22px;max-width:min(440px,92vw);background:var(--card);color:var(--ink);box-shadow:0 30px 60px -20px rgba(0,0,0,.8)}
 dialog::backdrop{background:rgba(5,8,16,.7)}
@@ -250,6 +251,7 @@ dialog .btns{justify-content:flex-end;margin-bottom:0}
       <div><div class="field" style="margin-top:0"><label for="coverPrompt">Cover scene</label><textarea id="coverPrompt" rows="4"></textarea></div>
         <div class="sp-a"><button class="btn sm" id="coverGo">New cover picture</button><button class="btn sm ghost" id="coverUp">Upload my picture</button><button class="btn sm ghost danger" id="coverDel">Delete picture</button></div>
         <div class="chk" style="margin-top:10px"><input type="checkbox" id="coverHasT"><label for="coverHasT"><b>Use this picture exactly as it is</b><div class="hint">Tick this when the picture already shows the title. Nothing is added on top.</div></label></div>
+        <div class="field" id="coverTitleBox" hidden style="margin-top:10px"><label for="coverTitleText">Title written in the picture</label><input type="text" id="coverTitleText" maxlength="200" placeholder="Type the title exactly as you see it on the cover"><div class="hint" id="coverTitleMsg">KDP rejects books when the cover title is different from the book title.</div></div>
         <div class="chk" style="margin-top:10px"><input type="checkbox" id="coverFixA"><label for="coverFixA"><b>Write my author name myself</b><div class="hint">Use with the option above when the AI misspelled the author name. It covers the bottom strip and prints your name correctly.</div></label></div></div></div>
     <div id="spreads"></div>
   </section>
