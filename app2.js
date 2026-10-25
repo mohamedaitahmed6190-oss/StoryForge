@@ -117,7 +117,9 @@
 
   /* ---------- interior ---------- */
   // deps: { PDFLib, fontkit, loadFont(name)->Promise<Uint8Array>, getImage(key,pxW,pxH)->Promise<Uint8Array|null>, onProgress(i,n) }
+  SF.niceName = function (n) { return String(n || '').replace(/(^|[\s\-'])([a-z])/g, function (m, a, b) { return a + b.toUpperCase(); }); };
   SF.buildInterior = async function (book, deps) {
+    book = Object.assign({}, book, { author: SF.niceName(book.author) });
     var P = deps.PDFLib, plan = SF.makePlan(book), n = plan.total;
     var doc = await P.PDFDocument.create();
     doc.registerFontkit(deps.fontkit);
@@ -260,6 +262,7 @@
     return { spine: sp, width: b + t.w + sp + t.w + b, height: b + t.h + b, hasSpineText: total > 79 };
   };
   SF.buildCover = async function (book, deps) {
+    book = Object.assign({}, book, { author: SF.niceName(book.author) });
     var P = deps.PDFLib, plan = SF.makePlan(book), total = plan.total, ci = SF.coverInfo(book, total);
     var t = SF.trim(book.trim), b = SF.BLEED * IN, tw = t.w * IN, sp = ci.spine * IN;
     var W = ci.width * IN, H = ci.height * IN;
