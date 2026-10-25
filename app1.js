@@ -20,7 +20,7 @@
 
   /* ---------- book model ---------- */
   function newBook() {
-    return { id: 'b' + Date.now().toString(36), idea: '', age: '6-8', nStories: 7, beats: 2, lang: 'English', style: '3d', trim: '8.5x8.5', paper: 'premium',
+    return { id: 'b' + Date.now().toString(36), idea: '', age: '6-8', nStories: 7, beats: 3, lang: 'English', style: '3d', trim: '8.5x8.5', paper: 'premium',
       bleed: true, aiNotice: true, author: '', cast: '', year: new Date().getFullYear(), title: '', subtitle: '', tagline: '', dedication: '',
       characters: [], stories: [], cover: { prompt: '' }, listing: null, backColor: '#16213E', seeds: {}, srcPx: 1024, upPx: {}, upFit: 'fill' };
   }
@@ -155,6 +155,7 @@
     if (text) $('#genT').textContent = text;
     if (frac != null) $('#genB').style.width = Math.round(frac * 100) + '%';
   }
+  function gTag(c) { var l = String(c.look || ''); return /\bgirl\b/i.test(l) ? ' (a girl)' : /\bboy\b/i.test(l) ? ' (a boy)' : ''; }
   function enforceCast(o, cast) {                // if the AI still renamed the characters, put the author's names back
     var want = String(cast || '').split(/,|&|\band\b|\+|;/i).map(function (x) { return x.trim(); }).filter(Boolean).slice(0, 4);
     if (!want.length || !o || !Array.isArray(o.characters)) return o;
@@ -339,9 +340,9 @@
     var withRef = cast.filter(function (x) { return RF[x.i]; }).slice(0, 4), noRef = cast.filter(function (x) { return !RF[x.i]; });
     var tail = ' SCENE: ' + scene + ' STYLE: ' + st.p + '. ' + extra + ' No text, no letters, no logos, no watermark, no frame.', lock = '';
     if (withRef.length) {
-      lock = withRef.map(function (x, k) { return 'Image ' + k + ' is the character ' + x.c.name; }).join('. ') + '. Draw these characters in the scene exactly like their reference images: same face, same hair, same skin tone, same age, same height and body proportions, same outfit and colours, never change clothes. All children are 8 to 10 years old with natural child proportions, not chibi or baby-like. ';
+      lock = withRef.map(function (x, k) { return 'Image ' + k + ' is the character ' + x.c.name + gTag(x.c); }).join('. ') + '. Draw these characters in the scene exactly like their reference images: same face, same hair, same skin tone, same age, same height and body proportions, same outfit and colours, never change clothes. All children are 8 to 10 years old with natural child proportions, not chibi or baby-like. ';
     }
-    var looks = noRef.map(function (x) { return x.c.name + ' = ' + x.c.look + '.'; }).join(' ');
+    var looks = noRef.map(function (x) { return x.c.name + gTag(x.c) + ' = ' + x.c.look + '.'; }).join(' ');
     if (looks) lock += 'CHARACTERS (identical in every picture: same face, same hair, same exact outfit and colours): ' + looks + ' ';
     return { prompt: (lock + tail).slice(0, 1700), refs: withRef.map(function (x) { return RF[x.i].blob; }) };
   }
@@ -509,6 +510,7 @@
     if (exporting) return;
     var miss = kind === 'cover' ? (IM.cover ? [] : ['cover']) : missing().filter(function (k) { return k !== 'cover'; });
     if (miss.length && !(await SF.ask(kind === 'cover' ? 'Cover picture missing' : miss.length + ' pictures missing', 'Missing pictures print as grey placeholders. Make them first in step 3, or export anyway.', 'Export anyway', 'Go back'))) return;
+    if (!String(B.author || '').trim() && !(await SF.ask('Author name missing', 'Your name is not on the title page, the copyright page or the cover. Add it in step 1 (Print setup, Author name) first.', 'Export anyway', 'Go back'))) return;
     exporting = true; $('#btnInterior').disabled = $('#btnCover').disabled = true;
     try {
       xgen(true, 'Loading tools…', 0.03); await SF.loadLibs();

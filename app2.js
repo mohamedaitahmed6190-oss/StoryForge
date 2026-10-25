@@ -295,6 +295,12 @@
     }
     }
 
+    if (book.coverHasTitle && book.author) {            // author name over the art, with a dark outline (no transparency)
+      var ay = b + 0.32 * IN, ax = frontX + tw / 2, au = String(book.author);
+      [[-2, 0], [2, 0], [0, -2], [0, 2], [-1.5, -1.5], [1.5, 1.5], [-1.5, 1.5], [1.5, -1.5]].forEach(function (o) { drawCentered(P, page, dispB, au, 22, ax + o[0], ay + o[1], hex(P, '#101830')); });
+      drawCentered(P, page, dispB, au, 22, ax, ay, white);
+    }
+
     // back cover
     var light_bg = lum(back) > 0.6, tc = light_bg ? navy : white, bx = b + 0.6 * IN, bw = tw - 1.2 * IN;
     if (book.backCover) {
@@ -342,7 +348,10 @@
     if (stats && stats.overflow) add('warn', stats.overflow + ' text page(s) use very small type — shorten the text or use a bigger trim size');
     if (stats && stats.ipHits && stats.ipHits.length) add('fail', 'Trademark risk in your text: ' + stats.ipHits.join(', '));
     add(book.title && book.title.length <= 200 ? 'ok' : 'fail', 'Title length ' + (book.title || '').length + '/200');
-    add(book.author ? 'ok' : 'warn', book.author ? 'Author name set' : 'Set the author name (title page and cover)');
+    add(book.author ? 'ok' : 'fail', book.author ? 'Author name set' : 'Author name is missing: it is needed on the title page, copyright page and cover');
+    var wc = [], sbs = book.stories || [];
+    sbs.forEach(function (s) { (s.beats || []).forEach(function (b) { wc.push(String((b && b.text) || '').split(/\s+/).filter(Boolean).length); }); });
+    if (wc.length) { var avg = Math.round(wc.reduce(function (a, b) { return a + b; }, 0) / wc.length); add(avg >= 45 ? 'ok' : 'warn', 'Average ' + avg + ' words per text page' + (avg >= 45 ? '' : ': the stories are very short. Use 3 or 4 beats per story for a fuller book.')); }
     add('info', 'In KDP > Content, answer "Yes" to AI-generated text and AI-generated images (KDP requires this disclosure for every title).');
     add('info', 'KDP limits how many new titles you can create and submit each week per format. The limits reset every Sunday at 00:00 UTC.');
     add('info', 'KDP > Content, in this order: (1) get a free KDP ISBN, (2) ' + pp.label + ', (3) trim ' + t.w + ' × ' + t.h + ' in, (4) Bleed (PDF only), (5) upload the INTERIOR first, then the cover (the cover size depends on the page count), (6) leave "my cover has a barcode" unchecked, (7) Launch Previewer, then Approve.');

@@ -79,10 +79,10 @@ const SYS = 'You are an award-winning children\'s picture-book author and a Kind
   'All content is original and child-safe: no trademarked or licensed characters, brands, franchises, songs or real people.';
 
 const AGE = {
-  '3-5':  { words: '25-40',  note: 'very simple words, short sentences, repetition and gentle sounds' },
-  '6-8':  { words: '45-70',  note: 'simple sentences, lively dialogue, small cliffhangers between beats' },
-  '6-12': { words: '55-90', note: 'clear, lively language that a 6-year-old can follow and a 12-year-old still enjoys: simple sentences with some richer words, humour, real dialogue and gentle suspense' },
-  '9-12': { words: '70-110', note: 'richer vocabulary, humour, stronger suspense and emotion' },
+  '3-5':  { words: '30-50',  note: 'very simple words, short sentences, repetition and gentle sounds' },
+  '6-8':  { words: '65-95',  note: 'simple sentences, lively dialogue, small cliffhangers between beats' },
+  '6-12': { words: '75-110', note: 'clear, lively language that a 6-year-old can follow and a 12-year-old still enjoys: simple sentences with some richer words, humour, real dialogue and gentle suspense' },
+  '9-12': { words: '90-130', note: 'richer vocabulary, humour, stronger suspense and emotion' },
 };
 
 const clip = (v, n) => String(v ?? '').slice(0, n);
@@ -111,7 +111,7 @@ Return this JSON shape:
  "subtitle": "subtitle that says what the book is (max 90 chars)",
  "tagline": "one-line hook",
  "dedication": "short warm dedication line",
- "characters": [ { "name": "first name only", "role": "who they are", "look": "FIXED visual description for the illustrator, the same in every picture: age, skin tone, hair colour and style, ONE specific outfit (top, bottoms, shoes, each with a colour) that never changes, one accessory (max 35 words)" } ],
+ "characters": [ { "name": "first name only", "role": "who they are", "look": "FIXED visual description for the illustrator, the same in every picture. It MUST start with \"a N-year-old girl\" or \"a N-year-old boy\" (decide from the name; a girl must clearly look like a girl, with feminine face and long or styled hair; a boy must clearly look like a boy), then skin tone, hair colour and style, ONE specific outfit (top, bottoms, shoes, each with a colour) that never changes, one accessory (max 35 words)" } ],
  "stories": [ { "title": "story title", "summary": "2 sentences: what happens and how it ends", "setting": "where it happens, visually", "lesson": "gentle lesson in 5-8 words" } ]
 }
 ${castLine(b)}
