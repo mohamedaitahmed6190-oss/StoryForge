@@ -1,0 +1,8 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.storyforge.books",
+    "sha256_cert_fingerprints": ["15:E6:CD:DD:18:B9:05:CF:BC:7F:6B:E5:C0:A4:DB:74:EA:07:6A:CA:26:B3:CB:33:DD:11:D7:3F:97:CC:15:F7"]
+  }
+}]
