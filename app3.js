@@ -157,6 +157,34 @@
     }).then(function (b) { return new Uint8Array(b); });
     return fcache[name];
   };
+  // Draws a picture into a rectangle with the best possible resampling: big reductions are done in halving steps (keeps fine detail, no jagged edges).
+  SF.drawSmooth = function (g, src, dx, dy, dw, dh) {
+    g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high';
+    var cur = src, sw = src.width, sh = src.height;
+    while (sw / 2 >= dw && sh / 2 >= dh) {
+      var m = document.createElement('canvas'); m.width = Math.ceil(sw / 2); m.height = Math.ceil(sh / 2);
+      var mg = m.getContext('2d'); mg.imageSmoothingEnabled = true; mg.imageSmoothingQuality = 'high';
+      mg.drawImage(cur, 0, 0, sw, sh, 0, 0, m.width, m.height);
+      cur = m; sw = m.width; sh = m.height;
+    }
+    g.drawImage(cur, 0, 0, sw, sh, dx, dy, dw, dh);
+  };
+  // Marks a JPEG as 300 DPI (JFIF density). Pixels are untouched. Anything that is not a JPEG is returned as it is.
+  SF.setJpegDpi = async function (blob, dpi) {
+    try {
+      var b = new Uint8Array(await blob.arrayBuffer());
+      if (b[0] !== 0xFF || b[1] !== 0xD8) return blob;
+      var hi = (dpi >> 8) & 255, lo = dpi & 255;
+      if (b[2] === 0xFF && b[3] === 0xE0 && b[6] === 0x4A && b[7] === 0x46 && b[8] === 0x49 && b[9] === 0x46) {   // existing JFIF header
+        b[13] = 1; b[14] = hi; b[15] = lo; b[16] = hi; b[17] = lo;
+        return new Blob([b], { type: 'image/jpeg' });
+      }
+      var app0 = new Uint8Array([0xFF, 0xE0, 0x00, 0x10, 0x4A, 0x46, 0x49, 0x46, 0x00, 0x01, 0x01, 0x01, hi, lo, hi, lo, 0x00, 0x00]);
+      var out = new Uint8Array(b.length + app0.length);
+      out.set(b.subarray(0, 2), 0); out.set(app0, 2); out.set(b.subarray(2), 2 + app0.length);
+      return new Blob([out], { type: 'image/jpeg' });
+    } catch (e) { return blob; }
+  };
   SF.download = function (bytes, name, type) {
     var url = URL.createObjectURL(new Blob([bytes], { type: type || 'application/pdf' }));
     var a = document.createElement('a'); a.href = url; a.download = name; document.body.appendChild(a); a.click();
