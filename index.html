@@ -24,6 +24,7 @@ p{margin:0}
 .wrap{max-width:820px;margin:0 auto;padding:0 16px}
 button,input,select,textarea{font:inherit;color:inherit}
 :focus-visible{outline:3px solid var(--amber);outline-offset:2px}
+[hidden]{display:none!important}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 
 .top{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 16px 10px;max-width:820px;margin:0 auto}
@@ -188,13 +189,20 @@ dialog .btns{justify-content:flex-end;margin-bottom:0}
   <section class="panel on" id="p1">
     <h2>Turn one idea into a KDP-ready picture book</h2>
     <p class="lead">Describe it in a sentence or two. StoryForge writes the stories and the dialogue, paints the pictures and lays out the pages to match Amazon KDP's print rules.</p>
+    <fieldset class="field" style="margin-top:0"><legend>Book type</legend>
+      <div class="seg" role="radiogroup">
+        <label><input type="radio" name="kind" value="story" checked><span>Story book</span></label>
+        <label><input type="radio" name="kind" value="learn"><span>Learning book</span></label>
+      </div>
+      <div class="hint" id="kindNote"></div>
+    </fieldset>
     <div class="card field" style="margin-top:0">
       <label for="idea">Your idea</label>
       <textarea id="idea" rows="4" maxlength="900" placeholder="Three kids find a glowing map in their grandfather's attic and sail to a chain of hidden islands."></textarea>
       <div class="chips" id="chips"></div>
     </div>
     <div class="field"><label for="cast">Main characters (optional)</label><input type="text" id="cast" maxlength="120" placeholder="e.g. Ben, Emma and Jack"><div class="hint">Type the names you want. The book will use exactly these names, and nobody else.</div></div>
-    <fieldset class="field"><legend>Reader age</legend>
+    <fieldset class="field" id="ageField"><legend>Reader age</legend>
       <div class="seg" role="radiogroup">
         <label><input type="radio" name="age" value="3-5"><span>3–5</span></label>
         <label><input type="radio" name="age" value="6-8" checked><span>6–8</span></label>
@@ -203,9 +211,15 @@ dialog .btns{justify-content:flex-end;margin-bottom:0}
         <label><input type="radio" name="age" value="18+"><span>18+</span></label>
       </div>
     </fieldset>
+    <div class="row stack" id="learnBox" hidden>
+      <div class="field"><label for="level">Learner level</label>
+        <select id="level"><option value="A1">Beginner (A1)</option><option value="A2" selected>Elementary (A2)</option><option value="B1">Intermediate (B1)</option><option value="B2">Upper-intermediate (B2)</option></select></div>
+      <div class="field"><label for="gloss">Translate the key words into</label>
+        <select id="gloss"><option value="">No translation</option><option>French</option><option>Spanish</option><option>Portuguese</option><option>German</option><option>Italian</option></select></div>
+    </div>
     <div class="row">
-      <div class="field"><label for="nStories">Number of stories</label><input type="number" id="nStories" min="1" max="12" value="7" inputmode="numeric"></div>
-      <div class="field"><label for="beats">Pages of text per story</label>
+      <div class="field"><label for="nStories"><span id="nLbl">Number of stories</span></label><input type="number" id="nStories" min="1" max="12" value="7" inputmode="numeric"></div>
+      <div class="field"><label for="beats"><span id="bLbl">Pages of text per story</span></label>
         <select id="beats"><option value="1">1 (short)</option><option value="2">2</option><option value="3" selected>3 (recommended)</option><option value="4">4 (long)</option></select></div>
     </div>
     <div class="row stack">
@@ -306,8 +320,8 @@ dialog .btns{justify-content:flex-end;margin-bottom:0}
 <div id="toast" role="status" aria-live="polite"></div>
 
 <script src="app3.js?v=5"></script>
-<script src="app2.js?v=12"></script>
-<script src="app4.js?v=1"></script>
-<script src="app1.js?v=26"></script>
+<script src="app2.js?v=13"></script>
+<script src="app4.js?v=2"></script>
+<script src="app1.js?v=27"></script>
 </body>
 </html>

@@ -85,6 +85,7 @@
     '.tx p{margin:0 0 .5em 0;font-weight:bold}.tx h2{margin:0 0 .35em 0;font-weight:bold}' +
     '.mid{position:absolute;left:120px;width:1360px;text-align:center}.mid h1{margin:0;font-weight:bold}.mid p{margin:.5em 0}' +
     '.rule{width:240px;height:6px;margin:40px auto;background:#E63946}' +
+    '.ln{text-align:left}.ln p{font-weight:normal;margin:0 0 .4em 0}.ln h3{margin:.7em 0 .2em 0;font-weight:bold}.lab{font-weight:bold;letter-spacing:.06em;margin:0 0 .4em 0}' +
     '.full{display:block;width:' + E.coverW + 'px;height:' + E.coverH + 'px}';
   function head(title, lang) {
     return '<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE html>\n<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="' + lang + '" xml:lang="' + lang + '">\n<head><meta charset="utf-8"/><title>' + x(title) + '</title>' +
@@ -130,24 +131,45 @@
       } else if (d.t === 'copyright') {
         var yr = book.year || new Date().getFullYear();
         var lines = [title, 'Text and illustrations © ' + yr + ' ' + (book.author || ''), 'All rights reserved. No part of this book may be reproduced, stored or transmitted in any form without written permission from the author, except for brief quotations in reviews.',
-          'This is a work of fiction. Names, characters, places and events are products of the imagination.', book.aiNotice ? 'Created with the help of AI tools and curated, edited and arranged by the author.' : '', 'First edition ' + yr + '. Published through Amazon KDP.'].filter(Boolean);
+          SF.isLearn(book) ? 'The people and situations in the dialogues are fictional. Any resemblance to real persons is coincidental.' : 'This is a work of fiction. Names, characters, places and events are products of the imagination.', book.aiNotice ? 'Created with the help of AI tools and curated, edited and arranged by the author.' : '', 'First edition ' + yr + '. Published through Amazon KDP.'].filter(Boolean);
         page(id, name, head(title, lang) + '<div class="pg"><div class="mid" style="top:700px">' + lines.map(function (t, k) { return '<p style="font-size:' + (k === 0 ? 62 : 40) + 'px;' + (k === 0 ? 'font-weight:bold;margin-bottom:1em' : 'color:#5B6275;font-weight:normal') + '">' + x(t) + '</p>'; }).join('') + '</div></div>' + TAIL);
       } else if (d.t === 'ebeat') {
         var story = book.stories[d.s], beat = story.beats[d.b], paras = String(beat.text || '').split(/\n+/).map(function (p) { return p.trim(); }).filter(Boolean);
+        var learn = SF.isLearn(book), pic = d.pic !== false;
+        var lab = learn ? (beat.label || SF.learnLabels(story.beats.length)[d.b] || '') : '';
         var hasHead = d.b === 0, headText = hasHead ? (d.s + 1) + '  ' + (story.title || '') : '';
-        var boxH = E.coverH - E.picH - 150, headLines = hasHead ? Math.max(1, Math.ceil(headText.length * 62 * 0.56 / 1380)) : 0;
-        var fs = fitSize(paras, 1380, boxH, headLines, 62, 34), col = SF.storyColor(d.s);
-        var blob = deps.getBlob(d.key), img;
-        if (blob) img = await SF.prepImage(blob, E.picW, E.picH, false);
-        else { var cv = document.createElement('canvas'); cv.width = E.picW; cv.height = E.picH; var cg = cv.getContext('2d'); cg.fillStyle = '#EEF1F6'; cg.fillRect(0, 0, cv.width, cv.height); img = await jpegBytes(cv, 0.8); }
-        files.push({ name: 'OEBPS/images/' + d.key + '.jpg', data: img }); items.push('<item id="im-' + d.key + '" href="images/' + d.key + '.jpg" media-type="image/jpeg"/>');
-        var body = '<div class="pg"><img class="pic" src="images/' + d.key + '.jpg" alt=""/><div class="tx" style="top:' + (E.picH + 70) + 'px;font-size:' + fs + 'px;line-height:1.36">' +
-          (hasHead ? '<h2 style="font-size:' + Math.round(fs * 1.2) + 'px;line-height:1.25;color:' + col + '">' + x(headText) + '</h2>' : '') + paras.map(function (p) { return '<p>' + x(p) + '</p>'; }).join('') + '</div></div>';
+        var topY = pic ? E.picH + 70 : 150, boxH = E.coverH - topY - 80;
+        var headLines = (hasHead ? Math.max(1, Math.ceil(headText.length * 62 * 0.56 / 1380)) : 0) + (lab ? 1 : 0);
+        var fs = fitSize(paras, 1380, boxH, headLines, learn ? 52 : 62, 30), col = SF.storyColor(d.s);
+        var imgTag = '';
+        if (pic) {
+          var blob = deps.getBlob(d.key), img;
+          if (blob) img = await SF.prepImage(blob, E.picW, E.picH, false);
+          else { var cv = document.createElement('canvas'); cv.width = E.picW; cv.height = E.picH; var cg = cv.getContext('2d'); cg.fillStyle = '#EEF1F6'; cg.fillRect(0, 0, cv.width, cv.height); img = await jpegBytes(cv, 0.8); }
+          files.push({ name: 'OEBPS/images/' + d.key + '.jpg', data: img }); items.push('<item id="im-' + d.key + '" href="images/' + d.key + '.jpg" media-type="image/jpeg"/>');
+          imgTag = '<img class="pic" src="images/' + d.key + '.jpg" alt=""/>';
+        }
+        var body = '<div class="pg">' + imgTag + '<div class="tx' + (learn ? ' ln' : '') + '" style="top:' + topY + 'px;font-size:' + fs + 'px;line-height:1.36">' +
+          (hasHead ? '<h2 style="font-size:' + Math.round(fs * 1.2) + 'px;line-height:1.25;color:' + col + '">' + x(headText) + '</h2>' : '') +
+          (lab ? '<div class="lab" style="font-size:' + Math.round(fs * 0.62) + 'px;color:' + col + '">' + x(lab.toUpperCase()) + '</div>' : '') +
+          paras.map(function (p) { return '<p>' + x(p) + '</p>'; }).join('') + '</div></div>';
         page(id, name, head(title + ' — ' + (story.title || ''), lang) + body + TAIL);
         if (!firstBody) firstBody = name;
         if (hasHead) toc.push({ href: name, text: (d.s + 1) + ' ' + (story.title || 'Story ' + (d.s + 1)) });
+      } else if (d.t === 'answers') {
+        var blocks = d.items.map(function (si) { return { si: si, title: (si + 1) + '  ' + (book.stories[si].title || ''), lines: SF.answerLines(book.stories[si]) }; });
+        var afs = 28;
+        for (var sz = 46; sz >= 28; sz -= 2) {
+          var cpl = Math.max(8, Math.floor(1380 / (sz * 0.56))), hh = d.first ? 150 : 0;
+          blocks.forEach(function (bk) { hh += sz * 1.3 * 1.25 + sz * 0.9; bk.lines.forEach(function (ln) { hh += Math.max(1, Math.ceil(ln.length / cpl)) * sz * 1.36; }); });
+          if (hh <= E.coverH - 300) { afs = sz; break; }
+        }
+        page(id, name, head(title + ' — Answer key', lang) + '<div class="pg"><div class="tx ln" style="top:150px;font-size:' + afs + 'px;line-height:1.36">' +
+          (d.first ? '<h2 style="font-size:80px;margin-bottom:.5em">Answer key</h2>' : '') +
+          blocks.map(function (bk) { return '<h3 style="font-size:' + Math.round(afs * 1.1) + 'px;color:' + SF.storyColor(bk.si) + '">' + x(bk.title) + '</h3>' + bk.lines.map(function (ln) { return '<p>' + x(ln) + '</p>'; }).join(''); }).join('') + '</div></div>' + TAIL);
+        if (d.first) toc.push({ href: name, text: 'Answer key' });
       } else if (d.t === 'end') {
-        page(id, name, head(title, lang) + '<div class="pg"><div class="mid" style="top:900px"><h1 style="font-size:190px">The End</h1><div class="rule"></div><p style="font-size:68px;color:#5B6275">New adventures are waiting...</p></div></div>' + TAIL);
+        page(id, name, head(title, lang) + '<div class="pg"><div class="mid" style="top:900px"><h1 style="font-size:190px">' + (SF.isLearn(book) ? 'Well done!' : 'The End') + '</h1><div class="rule"></div><p style="font-size:68px;color:#5B6275">' + (SF.isLearn(book) ? 'Keep practising a little every day.' : 'New adventures are waiting...') + '</p></div></div>' + TAIL);
       }
     }
 

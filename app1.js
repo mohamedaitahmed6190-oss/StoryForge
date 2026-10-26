@@ -16,11 +16,17 @@
     'Two sisters and their dog shrink to the size of ants and explore the garden kingdom.',
     'A moon-lit train that visits one sleepy animal town every night.'
   ];
+  var LEARN_EXAMPLES = [
+    'English for hotel housekeeping: greeting guests, cleaning rooms, asking for supplies and handling guest requests.',
+    'English for restaurant waiters: taking orders, explaining the menu, handling complaints and taking payment.',
+    'Everyday English for travellers: airport, hotel, taxi, restaurant, shopping and asking for directions.',
+    'Spanish for beginners: introducing yourself, ordering food, shopping and making friends.'
+  ];
   var B = null, IM = {}, RF = {}, step = 1, BUSY = {}, genStop = false, picStop = false, picRun = false, saveT, ipT;
 
   /* ---------- book model ---------- */
   function newBook() {
-    return { id: 'b' + Date.now().toString(36), idea: '', age: '6-8', nStories: 7, beats: 3, lang: 'English', style: '3d', trim: '8.5x8.5', paper: 'premium', kdpFormat: 'paperback', showSeries: false, seriesName: '', seriesNo: '',
+    return { id: 'b' + Date.now().toString(36), idea: '', kind: 'story', level: 'A2', gloss: '', age: '6-8', nStories: 7, beats: 3, lang: 'English', style: '3d', trim: '8.5x8.5', paper: 'premium', kdpFormat: 'paperback', showSeries: false, seriesName: '', seriesNo: '',
       bleed: true, aiNotice: true, author: '', cast: '', year: new Date().getFullYear(), title: '', subtitle: '', tagline: '', dedication: '',
       characters: [], stories: [], cover: { prompt: '' }, listing: null, backColor: '#16213E', seeds: {}, srcPx: 1024, upPx: {}, upFit: 'whole' };
   }
@@ -29,7 +35,7 @@
   }
   function imageKeys() {
     var k = ['cover'];
-    B.stories.forEach(function (s, i) { (s.beats || []).forEach(function (_, j) { k.push('s' + i + 'b' + j); }); });
+    B.stories.forEach(function (s, i) { (s.beats || []).forEach(function (_, j) { if (SF.hasPic(B, j, s.beats.length)) k.push('s' + i + 'b' + j); }); });
     return k;
   }
   function save() {
@@ -88,10 +94,24 @@
   }
 
   /* ---------- step 1: idea ---------- */
+  function paintChips() {
+    var ex = B && B.kind === 'learn' ? LEARN_EXAMPLES : EXAMPLES;
+    $('#chips').innerHTML = ex.map(function (e, i) { return '<button type="button" class="chip" data-i="' + i + '">' + esc(e) + '</button>'; }).join('');
+  }
+  function applyKind() {                          // Story book / Learning book
+    var learn = B.kind === 'learn';
+    $('#learnBox').hidden = !learn; $('#ageField').hidden = learn;
+    $('#nLbl').textContent = learn ? 'Number of chapters' : 'Number of stories';
+    $('#bLbl').textContent = learn ? 'Pages per chapter' : 'Pages of text per story';
+    $('#kindNote').textContent = learn ? 'Every chapter has key words, a dialogue (with a picture) and exercises. The answers are printed at the end of the book. Tip: 6 × 9 in or 8.5 × 11 in fits lesson text better than a square book.' : 'Illustrated stories with the same characters from page to page.';
+    $('#idea').placeholder = learn ? 'English for hotel housekeeping: greeting guests, cleaning rooms, asking for supplies.' : 'Three kids find a glowing map in their grandfather\'s attic and sail to a chain of hidden islands.';
+    $$('input[name=kind]').forEach(function (r) { r.checked = r.value === B.kind; });
+    paintChips();
+  }
   function fillSelects() {
     $('#style').innerHTML = Object.keys(STYLES).map(function (k) { return '<option value="' + k + '">' + esc(STYLES[k].label) + '</option>'; }).join('');
     fillFormatSelects();
-    $('#chips').innerHTML = EXAMPLES.map(function (e, i) { return '<button type="button" class="chip" data-i="' + i + '">' + esc(e) + '</button>'; }).join('');
+    paintChips();
   }
   var FMT_NOTE = {
     paperback: 'Paperback: pick a trim size. The cover is back + spine + front with 0.125 in bleed, and the spine grows with the page count.',
@@ -114,10 +134,12 @@
     $('#paperField').hidden = fm === 'ebook'; $('#bleedChk').hidden = fm === 'ebook';
     $('#fmtNote').textContent = FMT_NOTE[fm];
   }
-  var FIELDS = { idea: 'idea', cast: 'cast', nStories: 'nStories', beats: 'beats', lang: 'lang', style: 'style', trim: 'trim', paper: 'paper', author: 'author' };
+  var FIELDS = { level: 'level', gloss: 'gloss', idea: 'idea', cast: 'cast', nStories: 'nStories', beats: 'beats', lang: 'lang', style: 'style', trim: 'trim', paper: 'paper', author: 'author' };
   function fillIdea() {
+    if (!B.level) B.level = 'A2'; if (!B.kind) B.kind = 'story';
     renderFormat();
-    Object.keys(FIELDS).forEach(function (id) { $('#' + id).value = B[FIELDS[id]]; });
+    Object.keys(FIELDS).forEach(function (id) { $('#' + id).value = B[FIELDS[id]] == null ? '' : B[FIELDS[id]]; });
+    applyKind();
     $('#bleed').checked = B.bleed !== false; $('#aiNotice').checked = !!B.aiNotice;
     $$('input[name=age]').forEach(function (r) { r.checked = r.value === B.age; });
     setAspect(); estimate();
@@ -131,6 +153,12 @@
     if (id === 'seriesNo') B.seriesNo = e.target.value;
     if (id === 'aiNotice') B.aiNotice = e.target.checked;
     if (e && e.target.name === 'age') B.age = e.target.value;
+    if (e && e.target.name === 'kind') {
+      if (e.target.value === 'learn') { if (B.kind !== 'learn') B.ageStory = B.age; B.age = '18+'; if (B.lang === 'English' || !B.lang) B.lang = 'English'; }
+      else if (B.kind === 'learn') B.age = B.ageStory || '6-8';
+      B.kind = e.target.value; applyKind();
+      $$('input[name=age]').forEach(function (r) { r.checked = r.value === B.age; });
+    }
     setAspect(); estimate(); save();
   }
   function setAspect() {
@@ -138,11 +166,11 @@
     document.documentElement.style.setProperty('--ar', (t.w + bl) + '/' + (t.h + 2 * bl));
   }
   function estimate() {
-    var n = B.nStories, bt = B.beats, fake = { paper: B.paper, kdpFormat: B.kdpFormat, stories: [] };
-    for (var i = 0; i < n; i++) { var o = { beats: [] }; for (var j = 0; j < bt; j++) o.beats.push({}); fake.stories.push(o); }
-    var pl = SF.makePlan(fake);
-    if (SF.fmt(B) === 'ebook') { $('#estimate').textContent = 'About ' + pl.total + ' Kindle pages and ' + (n * bt + 1) + ' pictures (the cover included).'; return; }
-    $('#estimate').textContent = 'About ' + pl.total + ' pages and ' + (n * bt + 1) + ' pictures (the cover included). ' + (pl.fillers ? pl.fillers + ' activity page' + (pl.fillers > 1 ? 's are' : ' is') + ' added to reach the KDP minimum. ' : '');
+    var n = B.nStories, bt = B.beats, fake = { paper: B.paper, kdpFormat: B.kdpFormat, kind: B.kind, trim: B.trim, stories: [] };
+    for (var i = 0; i < n; i++) { var o = { beats: [] }; for (var j = 0; j < bt; j++) o.beats.push({}); if (B.kind === 'learn' && bt >= 2) o.answers = new Array(bt === 4 ? 11 : 6).join('x\n').trim(); fake.stories.push(o); }
+    var pl = SF.makePlan(fake), np = (B.kind === 'learn' ? n : n * bt) + 1;
+    if (SF.fmt(B) === 'ebook') { $('#estimate').textContent = 'About ' + pl.total + ' Kindle pages and ' + np + ' pictures (the cover included).'; return; }
+    $('#estimate').textContent = 'About ' + pl.total + ' pages and ' + np + ' pictures (the cover included). ' + (pl.fillers ? pl.fillers + ' activity page' + (pl.fillers > 1 ? 's are' : ' is') + ' added to reach the KDP minimum. ' : '');
   }
 
   async function writeBook() {
@@ -204,7 +232,7 @@
       showGen(true, 'Planning your book…', 0.03);
       var o, avoid = SF.ipHits(B.idea);
       for (var t = 0; t < 3; t++) {
-        o = await api('outline', { idea: B.idea, cast: B.cast, age: B.age, lang: B.lang, stories: B.nStories, avoid: avoid });
+        o = await api('outline', { idea: B.idea, cast: B.cast, age: B.age, lang: B.lang, kind: B.kind, level: B.level, stories: B.nStories, avoid: avoid });
         var oh = SF.ipHits(JSON.stringify(o)).filter(function (w) { return SF.ipHits(B.idea).indexOf(w) < 0; });
         if (!oh.length) break; avoid = avoid.concat(oh);
       }
@@ -215,11 +243,11 @@
       if (!chars.length || !sts.length) throw new Error('The AI returned an incomplete plan. Try again.');
       B.title = clip(o.title, 200) || 'Untitled'; B.subtitle = clip(o.subtitle, 200); B.tagline = clip(o.tagline, 200); B.dedication = clip(o.dedication, 160);
       B.characters = chars; B.listing = null; B.cover = { prompt: '' }; B.seeds = {}; B.nStories = sts.length;
-      B.stories = sts.map(function (s) { return { title: clip(s.title, 80), summary: clip(s.summary, 300), setting: clip(s.setting, 160), lesson: clip(s.lesson, 90), beats: [] }; });
+      B.stories = sts.map(function (s) { return { title: clip(s.title, 80), summary: clip(s.summary, 300), setting: clip(s.setting, 160), lesson: clip(s.lesson, 90), beats: [], answers: '' }; });
       renderStory(); save();
       for (var i = 0; i < B.stories.length; i++) {
         if (genStop) break;
-        showGen(true, 'Writing story ' + (i + 1) + ' of ' + B.stories.length + ': ' + B.stories[i].title, 0.08 + 0.8 * i / B.stories.length);
+        showGen(true, 'Writing ' + (B.kind === 'learn' ? 'chapter ' : 'story ') + (i + 1) + ' of ' + B.stories.length + ': ' + B.stories[i].title, 0.08 + 0.8 * i / B.stories.length);
         try { await writeStory(i); renderStory(); save(); } catch (e) { if (e.fatal) throw e; if (e.message === 'stopped') break; SF.toast('Story ' + (i + 1) + ' failed. Use "Write this story" to retry.'); }
       }
       if (!genStop) { showGen(true, 'Writing the listing text…', 0.92); try { await makeListing(); } catch (e) { /* optional */ } }
@@ -235,17 +263,19 @@
     var bible = { title: B.title, characters: B.characters, stories: B.stories.map(function (s) { return { title: s.title, summary: s.summary, setting: s.setting, lesson: s.lesson }; }) };
     var d, pg, avoid = [];
     for (var t = 0; t < 3; t++) {
-      d = await api('story', { bible: bible, index: i, beats: B.beats, age: B.age, lang: B.lang, prevSummary: i ? B.stories[i - 1].summary : '', avoid: avoid });
+      d = await api('story', { bible: bible, index: i, beats: B.beats, age: B.age, lang: B.lang, kind: B.kind, level: B.level, gloss: B.gloss, prevSummary: i ? B.stories[i - 1].summary : '', avoid: avoid });
       pg = (d.pages || []).filter(function (p) { return p && cleanText(p.text); }).slice(0, B.beats);
       var hits = SF.ipHits(pg.map(function (p) { return p.text + ' ' + p.scene; }).join(' '));
       if (!hits.length) break; avoid = avoid.concat(hits);
     }
     if (!pg.length) throw new Error('empty story');
     while (pg.length < B.beats) pg.push({ text: pg[pg.length - 1].text, scene: pg[pg.length - 1].scene });
-    B.stories[i].beats = pg.map(function (p) { return { text: cleanText(p.text), scene: clip(p.scene, 400) || (B.stories[i].setting + '. ' + B.stories[i].title) }; });
+    var labs = B.kind === 'learn' ? SF.learnLabels(B.beats) : null;
+    B.stories[i].beats = pg.map(function (p, k) { var o = { text: cleanText(p.text), scene: clip(p.scene, 400) || (B.stories[i].setting + '. ' + B.stories[i].title) }; if (labs) o.label = labs[k]; return o; });
+    if (labs) B.stories[i].answers = labs.indexOf('Practice') >= 0 ? cleanText(Array.isArray(d.answers) ? d.answers.join('\n') : d.answers).slice(0, 900) : '';
   }
   async function makeListing() {
-    var d = await api('listing', { bible: { title: B.title, subtitle: B.subtitle, characters: B.characters, stories: B.stories }, age: B.age, lang: B.lang }, 2);
+    var d = await api('listing', { bible: { title: B.title, subtitle: B.subtitle, characters: B.characters, stories: B.stories }, age: B.age, lang: B.lang, kind: B.kind, level: B.level }, 2);
     var kw = (d.keywords || []).map(function (k) { return clip(k, 50); }).filter(Boolean).slice(0, 7); while (kw.length < 7) kw.push('');
     var ra = d.reading_age || {};
     B.listing = { title: clip(d.title || B.title, 200), subtitle: clip(d.subtitle || B.subtitle, 200), description: clip(d.description, 4000), back_cover: clip(d.back_cover, 700),
@@ -270,10 +300,12 @@
     }).join('');
     $('#stories').innerHTML = B.stories.map(function (s, i) {
       var beats = (s.beats || []).map(function (b, j) {
-        return '<div class="beat"><small>Page text ' + (j + 1) + '</small><textarea data-s="' + i + '" data-b="' + j + '" data-f="text">' + esc(b.text) + '</textarea>' +
+        var lab = B.kind === 'learn' ? (b.label || SF.learnLabels(s.beats.length)[j] || '') : '', pic = SF.hasPic(B, j, s.beats.length);
+        return '<div class="beat"><small>' + (lab ? esc(lab) + ' (page ' + (j + 1) + ')' : 'Page text ' + (j + 1)) + '</small><textarea data-s="' + i + '" data-b="' + j + '" data-f="text">' + esc(b.text) + '</textarea>' +
           '<button type="button" class="btn sm ghost" data-act="copybeat" data-s="' + i + '" data-b="' + j + '">Copy this page text</button>' +
-          '<small>What the picture shows</small><textarea class="sc" data-s="' + i + '" data-b="' + j + '" data-f="scene">' + esc(b.scene) + '</textarea></div>';
+          (pic ? '<small>What the picture shows</small><textarea class="sc" data-s="' + i + '" data-b="' + j + '" data-f="scene">' + esc(b.scene) + '</textarea>' : '') + '</div>';
       }).join('');
+      if (B.kind === 'learn' && beats) beats += '<div class="beat"><small>Answers to the exercises (printed in the answer key at the end)</small><textarea data-s="' + i + '" data-f="answers" rows="5">' + esc(s.answers || '') + '</textarea></div>';
       return '<div class="story" style="--c:' + SF.storyColor(i) + '"><div class="sh"><input type="text" data-s="' + i + '" data-f="title" value="' + esc(s.title) + '" aria-label="Story ' + (i + 1) + ' title" maxlength="80"></div>' +
         '<p class="sum">' + esc(s.summary) + '</p>' + (beats || '<p class="hint" style="margin-left:8px">This story has no text yet.</p>') +
         '<div class="sp-a"><button class="btn sm ghost" data-act="rewrite" data-s="' + i + '">' + (beats ? 'Rewrite this story' : 'Write this story') + '</button>' + (beats ? '<button class="btn sm ghost" data-act="copystory" data-s="' + i + '">Copy the whole story</button>' : '') + '</div></div>';
@@ -283,7 +315,7 @@
   function allText() {
     var t = [B.idea, B.title, B.subtitle, B.dedication, B.author];
     B.characters.forEach(function (c) { t.push(c.name, c.role, c.look); });
-    B.stories.forEach(function (s) { t.push(s.title, s.summary); (s.beats || []).forEach(function (b) { t.push(b.text, b.scene); }); });
+    B.stories.forEach(function (s) { t.push(s.title, s.summary, s.answers); (s.beats || []).forEach(function (b) { t.push(b.text, b.scene); }); });
     if (B.listing) t.push(B.listing.title, B.listing.subtitle, B.listing.description, B.listing.back_cover, (B.listing.keywords || []).join(' '));
     return t.join(' \n ');
   }
@@ -399,6 +431,7 @@
     $('#btnAllPics').disabled = !B.stories.length;
     $('#spreads').innerHTML = B.stories.map(function (s, i) {
       return '<div class="sp-h" style="--c:' + SF.storyColor(i) + '"><h3>' + (i + 1) + '  ' + esc(s.title) + '</h3></div>' + (s.beats || []).map(function (b, j) {
+        if (!SF.hasPic(B, j, s.beats.length)) return '';
         var key = 's' + i + 'b' + j;
         return '<div class="spread"><div class="pg"><p>' + esc(b.text) + '</p></div><div class="im" data-img="' + key + '"></div></div>' +
           '<div class="sp-a"><button class="btn sm" data-act="gen" data-key="' + key + '">' + (IM[key] ? 'New picture' : 'Make picture') + '</button>' +
@@ -672,7 +705,7 @@
   /* ---------- wiring ---------- */
   function bind() {
     $('#p1').addEventListener('input', readIdea); $('#p1').addEventListener('change', readIdea);
-    $('#chips').addEventListener('click', function (e) { var c = e.target.closest('.chip'); if (!c) return; B.idea = EXAMPLES[+c.dataset.i]; $('#idea').value = B.idea; save(); });
+    $('#chips').addEventListener('click', function (e) { var c = e.target.closest('.chip'); if (!c) return; B.idea = (B.kind === 'learn' ? LEARN_EXAMPLES : EXAMPLES)[+c.dataset.i]; $('#idea').value = B.idea; save(); });
     $('#fmtCards').addEventListener('click', function (e) {
       var b = e.target.closest('[data-fmt]'); if (!b) return;
       var before = SF.fmt(B), id = b.dataset.fmt;

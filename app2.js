@@ -49,35 +49,63 @@
   /* ---------- page planner ---------- */
   // pages[i] (0-based) -> physical page i+1. Odd = right-hand page (recto), even = left-hand (verso).
   // Every story beat = text page on the left + its picture on the right, so each spread reads naturally.
+  /* ---------- learning books: chapter pages ---------- */
+  SF.LEARN_LABELS = { 1: ['Dialogue'], 2: ['Key words & dialogue', 'Practice'], 3: ['Key words', 'Dialogue', 'Practice'], 4: ['Key words', 'Dialogue', 'Practice', 'More practice'] };
+  SF.isLearn = function (book) { return !!book && book.kind === 'learn'; };
+  SF.learnLabels = function (n) { return SF.LEARN_LABELS[Math.max(1, Math.min(4, n | 0))]; };
+  SF.picBeat = function (nBeats) { var L = SF.learnLabels(nBeats); for (var i = 0; i < L.length; i++) if (/dialogue/i.test(L[i])) return i; return 0; };
+  SF.hasPic = function (book, j, nBeats) { return !SF.isLearn(book) || j === SF.picBeat(nBeats); };
+  SF.answerLines = function (s) { return String((s && s.answers) || '').split(/\n+/).map(function (x) { return x.trim(); }).filter(Boolean); };
+  SF.answerChunks = function (book, cap) {          // answer-key pages: which chapters go on which page (a chapter is never split)
+    var out = [], cur = null, used = 0;
+    (book.stories || []).forEach(function (s, si) {
+      var n = SF.answerLines(s).length; if (!n) return;
+      var cost = 2 + n, room = cap - (out.length ? 0 : 3);
+      if (!cur || used + cost > room) { cur = []; out.push(cur); used = 0; }
+      cur.push(si); used += cost;
+    });
+    return out;
+  };
   SF.makePlan = function (book) {
-    var pages = [], fm = SF.fmt(book);
+    var pages = [], fm = SF.fmt(book), learn = SF.isLearn(book);
     if (fm === 'ebook') {                        // Kindle: one page per beat (picture on top, text under it), no activity pages
       var etocs = [];
       pages.push({ t: 'title' }, { t: 'copyright' });
       (book.stories || []).forEach(function (s, si) {
         (s.beats || []).forEach(function (b, bi) {
           if (bi === 0) etocs.push({ story: si, page: pages.length + 1 });
-          pages.push({ t: 'ebeat', key: 's' + si + 'b' + bi, s: si, b: bi });
+          pages.push({ t: 'ebeat', key: 's' + si + 'b' + bi, s: si, b: bi, pic: SF.hasPic(book, bi, (s.beats || []).length) });
         });
       });
+      if (learn) SF.answerChunks(book, 30).forEach(function (items, k) { pages.push({ t: 'answers', items: items, first: k === 0 }); });
       pages.push({ t: 'end' });
       return { pages: pages, total: pages.length, tocs: etocs, fillers: 0, gutter: 0 };
     }
     pages.push({ t: 'title' }, { t: 'copyright' }, { t: 'toc' });
     var tocs = [];
     (book.stories || []).forEach(function (s, si) {
+      var start = pages.length, nb = (s.beats || []).length;
       (s.beats || []).forEach(function (b, bi) {
         if (bi === 0) tocs.push({ story: si, page: pages.length + 1 });
-        pages.push({ t: 'text', s: si, b: bi }, { t: 'image', key: 's' + si + 'b' + bi, s: si, b: bi });
+        if (!learn) pages.push({ t: 'text', s: si, b: bi }, { t: 'image', key: 's' + si + 'b' + bi, s: si, b: bi });
+        else {                                   // learning book: every page is text; the picture of the dialogue sits next to the first page
+          pages.push({ t: 'text', s: si, b: bi });
+          if (bi === 0) { var pb = SF.picBeat(nb); pages.push({ t: 'image', key: 's' + si + 'b' + pb, s: si, b: pb }); }
+        }
       });
+      if (learn && (pages.length - start) % 2) pages.push({ t: 'notes' });      // the next chapter starts on a left-hand page again
     });
+    if (learn) {
+      var tt0 = SF.trim(book.trim);
+      SF.answerChunks(book, Math.max(10, Math.floor((tt0.h - 2.6) * 72 / 17))).forEach(function (items, k) { pages.push({ t: 'answers', items: items, first: k === 0 }); });
+    }
     var base = pages.length + 2;                 // + The End + closing page
     var min = Math.max(24, SF.paperOf(book).minPages);
     if (fm === 'hardcover') min = Math.max(min, SF.HC.minPages + 1);     // KDP hardcover needs 75+ pages, and the count stays even
     var f = Math.max(0, min - base);
     if ((base + f) % 2) f++;
     pages.push({ t: 'end' });
-    for (var i = 0; i < f; i++) pages.push({ t: i % 2 ? 'notes' : 'draw' });
+    for (var i = 0; i < f; i++) pages.push({ t: learn || i % 2 ? 'notes' : 'draw' });
     pages.push({ t: 'thanks' });
     return { pages: pages, total: pages.length, tocs: tocs, fillers: f, gutter: SF.gutterIn(pages.length) };
   };
@@ -116,20 +144,20 @@
     if (cur) lines.push(cur);
     return lines;
   }
-  function layoutParas(font, paras, size, maxW, lh) {
-    var out = [], h = 0;
+  function layoutParas(font, paras, size, maxW, lh, gap) {
+    var out = [], h = 0, g = gap == null ? 0.55 : gap;
     paras.forEach(function (p, i) {
       var ls = wrap(font, size, p, maxW);
-      out.push(ls); h += ls.length * size * lh + (i < paras.length - 1 ? size * 0.55 : 0);
+      out.push(ls); h += ls.length * size * lh + (i < paras.length - 1 ? size * g : 0);
     });
     return { paras: out, h: h };
   }
-  function fit(font, paras, maxW, maxH, maxS, minS, lh) {
+  function fit(font, paras, maxW, maxH, maxS, minS, lh, gap) {
     for (var s = maxS; s >= minS; s -= 0.5) {
-      var L = layoutParas(font, paras, s, maxW, lh);
+      var L = layoutParas(font, paras, s, maxW, lh, gap);
       if (L.h <= maxH) return { size: s, L: L, over: false };
     }
-    return { size: minS, L: layoutParas(font, paras, minS, maxW, lh), over: true };
+    return { size: minS, L: layoutParas(font, paras, minS, maxW, lh, gap), over: true };
   }
   function drawCentered(P, page, font, text, size, cx, y, color) {
     page.drawText(text, { x: cx - font.widthOfTextAtSize(text, size) / 2, y: y, size: size, font: font, color: color });
@@ -206,7 +234,7 @@
           book.title || '',
           'Text and illustrations © ' + (book.year || new Date().getFullYear()) + ' ' + (book.author || ''),
           'All rights reserved. No part of this book may be reproduced, stored or transmitted in any form without written permission from the author, except for brief quotations in reviews.',
-          'This is a work of fiction. Names, characters, places and events are products of the imagination.',
+          SF.isLearn(book) ? 'The people and situations in the dialogues are fictional. Any resemblance to real persons is coincidental.' : 'This is a work of fiction. Names, characters, places and events are products of the imagination.',
           book.aiNotice ? 'Created with the help of AI tools and curated, edited and arranged by the author.' : '',
           'First edition ' + (book.year || new Date().getFullYear()) + '. Published through Amazon KDP.'
         ].filter(Boolean);
@@ -242,6 +270,22 @@
         var story = book.stories[d.s], beat = story.beats[d.b], col = hex(P, SF.storyColor(d.s));
         var paras = String(beat.text || '').split(/\n+/).map(function (x) { return x.trim(); }).filter(Boolean);
         var head = d.b === 0 ? (d.s + 1) + '  ' + (story.title || '') : '';
+        if (SF.isLearn(book)) {                    // lesson page: top-aligned, left-aligned, smaller type
+          var lab = (beat.label || SF.learnLabels(story.beats.length)[d.b] || '').toUpperCase();
+          var lhh = 0, lhs = 0, lhl = [];
+          if (head) { var lf = shrinkLines(dispB, head, G.bw, 30, 18); lhs = lf.size; lhl = lf.lines; lhh = lhl.length * lhs * 1.2 + 22; }
+          var LF = fit(light, paras, G.bw, G.bh - lhh - (lab ? 26 : 0) - 24, 16, 8.5, 1.4, 0.35);
+          var ly2 = G.by + G.bh;
+          lhl.forEach(function (ln) { ly2 -= lhs; page.drawText(ln, { x: G.bx, y: ly2, size: lhs, font: dispB, color: col }); ly2 -= lhs * 0.2; });
+          if (head) { ly2 -= 8; page.drawLine({ start: { x: G.bx, y: ly2 }, end: { x: G.bx + G.bw * 0.45, y: ly2 }, thickness: 1.4, color: col }); ly2 -= 14; }
+          if (lab) { ly2 -= 11; page.drawText(lab, { x: G.bx, y: ly2, size: 11, font: dispB, color: col }); ly2 -= 14; }
+          LF.L.paras.forEach(function (ls) {
+            ls.forEach(function (ln) { ly2 -= LF.size * 1.4; page.drawText(ln, { x: G.bx, y: ly2 + LF.size * 0.4, size: LF.size, font: light, color: ink }); });
+            ly2 -= LF.size * 0.35;
+          });
+          drawCentered(P, page, light, String(no), 11, cx, G.y0 + 0.4 * IN, soft);
+          continue;
+        }
         var hh = 0, hs = 0, hlines = [];
         if (head) { var hf = shrinkLines(dispB, head, G.bw, 36, 20); hs = hf.size; hlines = hf.lines; hh = hlines.length * hs * 1.2 + 26; }
         var F = fit(body, paras, G.bw, G.bh - hh - 30, ageMax, 13, 1.38);
@@ -256,11 +300,33 @@
         continue;
       }
 
+      if (d.t === 'answers') {
+        var rowsFor = function (sz) {
+          var rows = [];
+          if (d.first) rows.push({ k: 'T', t: 'Answer key', sz: 30 });
+          d.items.forEach(function (si) {
+            rows.push({ k: 'H', t: (si + 1) + '  ' + (book.stories[si].title || ''), sz: sz + 1, c: SF.storyColor(si) });
+            SF.answerLines(book.stories[si]).forEach(function (ln) { wrap(light, sz, ln, G.bw).forEach(function (w) { rows.push({ k: 'L', t: w, sz: sz }); }); });
+          });
+          return rows;
+        };
+        var asz = 13, arows = rowsFor(asz), ah = function (rs) { return rs.reduce(function (a, r) { return a + (r.k === 'L' ? r.sz * 1.35 : r.k === 'H' ? r.sz * 1.35 + 12 : 44); }, 0); };
+        while (ah(arows) > G.bh - 24 && asz > 8) { asz -= 0.5; arows = rowsFor(asz); }
+        var ay = G.by + G.bh;
+        arows.forEach(function (r) {
+          if (r.k === 'T') { ay -= r.sz; page.drawText(r.t, { x: G.bx, y: ay, size: r.sz, font: dispB, color: ink }); ay -= 14; page.drawLine({ start: { x: G.bx, y: ay }, end: { x: G.bx + G.bw * 0.45, y: ay }, thickness: 1.4, color: hex(P, SF.storyColor(0)) }); ay -= 16; }
+          else if (r.k === 'H') { ay -= 12 + r.sz; page.drawText(r.t, { x: G.bx, y: ay, size: r.sz, font: dispB, color: hex(P, r.c) }); ay -= r.sz * 0.35; }
+          else { ay -= r.sz * 1.35; page.drawText(r.t, { x: G.bx, y: ay + r.sz * 0.35, size: r.sz, font: light, color: ink }); }
+        });
+        drawCentered(P, page, light, String(no), 11, cx, G.y0 + 0.4 * IN, soft);
+        continue;
+      }
+
       if (d.t === 'end') {
-        var ec = hex(P, SF.storyColor(0));
-        drawCentered(P, page, dispB, 'The End', 60, cx, G.y0 + G.th * 0.55, ink);
+        var ec = hex(P, SF.storyColor(0)), lrn = SF.isLearn(book);
+        drawCentered(P, page, dispB, lrn ? 'Well done!' : 'The End', 60, cx, G.y0 + G.th * 0.55, ink);
         ornament(P, page, cx, G.y0 + G.th * 0.55 - 26, ec, 180);
-        drawCentered(P, page, body, 'New adventures are waiting...', 20, cx, G.y0 + G.th * 0.55 - 70, soft);
+        drawCentered(P, page, body, lrn ? 'Keep practising a little every day.' : 'New adventures are waiting...', 20, cx, G.y0 + G.th * 0.55 - 70, soft);
         continue;
       }
 
@@ -272,16 +338,16 @@
       }
 
       if (d.t === 'notes') {
-        drawCentered(P, page, dispB, 'My adventure notes', 28, cx, G.y0 + G.th - 1.4 * IN, ink);
+        drawCentered(P, page, dispB, SF.isLearn(book) ? 'My notes' : 'My adventure notes', 28, cx, G.y0 + G.th - 1.4 * IN, ink);
         var ly = G.y0 + G.th - 2.2 * IN;
         while (ly > G.by + 0.2 * IN) { page.drawLine({ start: { x: G.bx, y: ly }, end: { x: G.bx + G.bw, y: ly }, thickness: 0.8, color: hex(P, '#B9C0D0') }); ly -= 30; }
         continue;
       }
 
       if (d.t === 'thanks') {
-        drawCentered(P, page, dispB, 'Thank you for reading!', 34, cx, G.y0 + G.th * 0.55, ink);
+        drawCentered(P, page, dispB, SF.isLearn(book) ? 'Thank you for learning!' : 'Thank you for reading!', 34, cx, G.y0 + G.th * 0.55, ink);
         ornament(P, page, cx, G.y0 + G.th * 0.55 - 26, hex(P, SF.storyColor(1)), 160);
-        drawCentered(P, page, body, 'Keep exploring. The next map is waiting for you.', 16, cx, G.y0 + G.th * 0.55 - 62, soft);
+        drawCentered(P, page, body, SF.isLearn(book) ? 'Come back to this book whenever you need it.' : 'Keep exploring. The next map is waiting for you.', 16, cx, G.y0 + G.th * 0.55 - 62, soft);
         continue;
       }
     }
@@ -378,6 +444,12 @@
       (book.stories || []).forEach(function (s) { (s.beats || []).forEach(function (b) { wc.push(String((b && b.text) || '').split(/\s+/).filter(Boolean).length); }); });
       if (wc.length) { var avg = Math.round(wc.reduce(function (a, b) { return a + b; }, 0) / wc.length); add(avg >= 45 ? 'ok' : 'warn', 'Average ' + avg + ' words per text page' + (avg >= 45 ? '' : ': the stories are very short. Use 3 or 4 beats per story for a fuller book.')); }
     }
+    function learnChecks() {
+      if (!SF.isLearn(book)) return;
+      var need = (book.stories || []).filter(function (s) { return (s.beats || []).length >= 2; }), miss = need.filter(function (s) { return !SF.answerLines(s).length; });
+      add(miss.length ? 'warn' : 'ok', miss.length ? miss.length + ' chapter(s) have exercises but no answers. Write them in the story editor, so they appear in the answer key.' : 'Answer key included for ' + need.length + ' chapter' + (need.length === 1 ? '' : 's') + ' (at the end of the book)');
+      add('info', 'Learning book: read every dialogue and exercise once. The AI can make small language mistakes, and a learner will trust the book.');
+    }
     function sharedSeries() {
       var sn = String(book.seriesName || '').trim(); if (!sn) return;
       var no = String(book.seriesNo || '').trim();
@@ -400,7 +472,7 @@
       add('ok', 'Cover: ' + SF.EBOOK.coverW + ' × ' + SF.EBOOK.coverH + ' px JPG (Amazon\'s ideal size; ratio 1.6 : 1; minimum is ' + SF.EBOOK.minCoverW + ' × ' + SF.EBOOK.minCoverH + ' px, maximum 10,000 px; under 50 MB)');
       add('ok', n + ' Kindle pages: title, copyright, ' + (n - 3) + ' story pages and The End. No blank print pages, no bleed, no spine, no barcode.');
       add('ok', 'The story text stays real text (not part of the picture). Look at every page in Kindle Previewer to be sure nothing is cut off.');
-      sharedPics(100); sharedCover(); sharedText(); sharedSeries();
+      sharedPics(100); sharedCover(); sharedText(); learnChecks(); sharedSeries();
       add('info', 'KDP > Kindle eBook > Content: (1) manuscript = upload the EPUB, (2) cover = "Upload a cover you already have" and pick the JPG, (3) Launch Previewer and look at every page, (4) a Kindle eBook needs no ISBN.');
       add('info', 'AI disclosure: answer "Yes" for AI-generated text and AI-generated images (KDP requires this for every title).');
       add('info', 'Do not re-use the print PDF here: Kindle takes the EPUB. Make the paperback separately by choosing Paperback again.');
@@ -424,7 +496,7 @@
     if (hc) add(SF.trimsFor('hardcover').some(function (x) { return x.id === t.id; }) ? 'ok' : 'fail', 'Trim size ' + t.w + ' × ' + t.h + ' in is one of the hardcover sizes in this app (check it against the KDP hardcover template)');
     else add(t.w >= 4 && t.w <= 8.5 && t.h >= 6 && t.h <= 11.69 ? 'ok' : 'fail', 'Trim size ' + t.w + ' × ' + t.h + ' in is accepted by KDP paperbacks (width 4–8.5 in, height 6–11.69 in)');
     add('ok', 'Odd pages on the right, even pages on the left; outside margin 0.6 in (KDP needs 0.375 in with bleed)');
-    add('ok', 'Smallest text in the PDF is 11 pt (KDP minimum is 7 pt)');
+    add('ok', 'Smallest text in the PDF is ' + (SF.isLearn(book) ? '8.5' : '11') + ' pt (KDP minimum is 7 pt)');
     if (hc) {
       add('ok', 'Case-laminate cover: ' + ci.width.toFixed(3) + ' × ' + ci.height.toFixed(3) + ' in = 2 × wrap ' + SF.HC.wrap + ' + 2 × board (trim + ' + SF.HC.boardW + ') + spine ' + ci.spine.toFixed(4) + ' in; height = trim + ' + SF.HC.boardH + ' + 2 × wrap. The 0.394 in hinge next to the spine is kept free of text; 2 × 1.2 in white barcode area on the back.');
       add('info', 'Hardcover cover sizes follow the usual KDP case-laminate numbers (wrap 0.591 in, board = trim + 0.197 × 0.236 in, spine = pages × 0.002347 + 0.189 in). Download KDP\'s own hardcover cover template for your page count and compare the total size before you upload.');
@@ -433,7 +505,7 @@
     }
     sharedPics(((t.w + bl) || 1));
     if (stats && stats.overflow) add('warn', stats.overflow + ' text page(s) use very small type — shorten the text or use a bigger trim size');
-    sharedCover(); sharedText(); sharedSeries();
+    sharedCover(); sharedText(); learnChecks(); sharedSeries();
     add('info', 'In KDP > Content, answer "Yes" to AI-generated text and AI-generated images (KDP requires this disclosure for every title).');
     add('info', 'KDP limits how many new titles you can create and submit each week per format. The limits reset every Sunday at 00:00 UTC.');
     add('info', 'KDP > Content, in this order: (1) get a free KDP ISBN, (2) ' + (hc ? 'print option: ' + pp.label + ' (hardcover)' : pp.label) + ', (3) trim ' + t.w + ' × ' + t.h + ' in, (4) Bleed (PDF only), (5) upload the INTERIOR first, then the cover (the cover size depends on the page count), (6) leave "my cover has a barcode" unchecked, (7) Launch Previewer, then Approve.');

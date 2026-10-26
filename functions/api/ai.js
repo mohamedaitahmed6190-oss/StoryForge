@@ -80,8 +80,28 @@ const SYS_KIDS = 'You are an award-winning children\'s picture-book author and a
 const SYS_ADULT = 'You are an award-winning author of illustrated storybooks for adult readers and a Kindle Direct Publishing expert. ' +
   'You reply with ONE valid JSON object and nothing else: no markdown, no comments, no text before or after it. ' +
   'All content is original and suitable for a general audience: no explicit sexual content, no graphic violence or gore, no hate, no trademarked or licensed characters, brands, franchises, songs or real people.';
+const SYS_LEARN = 'You are an experienced language teacher and a course-book author who also knows Amazon KDP. ' +
+  'You write clear, practical, accurate lessons for learners. ' +
+  'You reply with ONE valid JSON object and nothing else: no markdown, no comments, no text before or after it. ' +
+  'All content is original and suitable for a general audience: no trademarked or licensed characters, brands, franchises, songs or real people.';
+const isLearn = b => b && b.kind === 'learn';
 const isAdult = b => b && b.age === '18+';
-const sysFor = b => isAdult(b) ? SYS_ADULT : SYS_KIDS;
+const sysFor = b => isLearn(b) ? SYS_LEARN : isAdult(b) ? SYS_ADULT : SYS_KIDS;
+
+// learning book: the pages of every chapter, by number of pages per chapter
+const LEARN_LABELS = {
+  1: ['Dialogue'],
+  2: ['Key words & dialogue', 'Practice'],
+  3: ['Key words', 'Dialogue', 'Practice'],
+  4: ['Key words', 'Dialogue', 'Practice', 'More practice'],
+};
+const LEVELS = {
+  A1: 'A1 beginner: very short, simple sentences, present tense, only the most common words',
+  A2: 'A2 elementary: short sentences, everyday words, simple past and future',
+  B1: 'B1 intermediate: clear connected sentences, everyday and work vocabulary, common phrasal verbs',
+  B2: 'B2 upper-intermediate: natural fluent language, wider vocabulary, polite and professional phrasing',
+};
+const levelLine = b => LEVELS[b.level] || LEVELS.A2;
 
 const AGE = {
   '3-5':  { words: '30-50',  note: 'very simple words, short sentences, repetition and gentle sounds' },
@@ -104,7 +124,30 @@ const castLine = b => {
     : `NAMES IN THE IDEA ARE FIXED. Read the author's idea and list every character name written in it in "names_in_idea", spelled exactly as written (even common names like Ben, Emma or Jack). Those names, and no others, must be the main characters: use them exactly, never rename, replace or "improve" them, and keep every description the idea gives for them. Invent new original names only when the idea names nobody, or to reach 2 characters when it names just one.`;
 };
 
+function outlineLearn(b) {
+  const n = num(b.stories, 7, 1, 12), lang = clip(b.lang, 30) || 'English';
+  return `Create the plan for an illustrated language-learning course book. The learners study ${lang}.
+Course idea from the author: """${clip(b.idea, 900)}"""
+Learner level: ${levelLine(b)}. Language of all lesson text: ${lang}.
+The book has exactly ${n} chapters. Each chapter teaches ONE practical situation or topic with its own key words, a dialogue and exercises. The chapters go from the most basic to the most useful follow-up situations. The same two or three people appear in the dialogues and the pictures, so the book feels like one story.
+
+Return this JSON shape:
+{
+ "names_in_idea": ["every character name written in the author's idea, spelled exactly like that; [] if the idea names nobody"],
+ "title": "clear, searchable book title (max 60 chars) that says what the learner gets",
+ "subtitle": "subtitle that names the audience, the level and the number of chapters (max 90 chars)",
+ "tagline": "one-line hook",
+ "dedication": "short warm dedication line for the learners",
+ "characters": [ { "name": "first name only", "role": "who they are in the dialogues (for example trainee, supervisor, guest)", "look": "FIXED visual description for the illustrator, the same in every picture. It MUST start with 'a N-year-old woman' or 'a N-year-old man' (N is 18 or more; decide from the name), then hair, skin tone, and a work outfit that fits the topic, each piece with its colour" } ],
+ "stories": [ { "title": "chapter title (max 50 chars)", "summary": "2 sentences: the situation and what the learner can do after the chapter", "setting": "where the dialogue happens, visually", "lesson": "the can-do goal in 5-9 words" } ]
+}
+${castLine(b)}
+Rules: 2 to 3 characters, each with a DIFFERENT first name; "stories" has exactly ${n} items (the chapters); never invent extra named characters inside "stories".
+${IP_RULE}${avoidLine(b)}`;
+}
+
 function outlinePrompt(b) {
+  if (isLearn(b)) return outlineLearn(b);
   const n = num(b.stories, 7, 1, 12), a = AGE[b.age] || AGE['6-8'];
   return `Create the plan for an illustrated ${isAdult(b) ? 'story book for adult readers' : 'children\'s story book'}.
 Book idea from the author: """${clip(b.idea, 900)}"""
@@ -126,7 +169,41 @@ Rules: 2 to 4 characters, each with a DIFFERENT first name; "stories" has exactl
 ${IP_RULE}${avoidLine(b)}`;
 }
 
+function learnPrompt(b) {
+  const lang = clip(b.lang, 30) || 'English', gloss = clip(b.gloss, 20);
+  const beats = num(b.beats, 3, 1, 4), labels = LEARN_LABELS[beats];
+  const chars = (b.bible?.characters || []).map(c => `- ${clip(c.name, 30)}: ${clip(c.role, 80)}`).join('\n');
+  const all = (b.bible?.stories || []).map((s, i) => `${i + 1}. ${clip(s.title, 80)} - ${clip(s.lesson, 90)}`).join('\n');
+  const i = num(b.index, 0, 0, 20), cur = b.bible?.stories?.[i] || {};
+  const what = {
+    'Key words': `6 to 8 key words or short phrases the learner needs in this chapter. One per line, written like: word or phrase — ${gloss ? 'its ' + gloss + ' translation, then a very short example sentence in ' + lang : 'a very short, simple meaning, then a very short example sentence'}.`,
+    'Dialogue': `a natural dialogue of 8 to 10 short lines between the cast. One line per speaker turn, written like: Name: sentence. It must use most of the key words and fit the level.`,
+    'Key words & dialogue': `first 5 or 6 key words, one per line, written like: word — ${gloss ? gloss + ' translation' : 'short meaning'}; then an empty line; then a dialogue of 6 to 8 short lines between the cast, written like: Name: sentence.`,
+    'Practice': `exactly 5 numbered exercises (1. to 5.) on this chapter: mix fill-in-the-blank with the possible words in brackets, true or false, and choosing the correct answer (a, b or c). Each exercise is one or two lines. Do NOT write the answers here.`,
+    'More practice': `exactly 5 more numbered exercises (6. to 10.): put the words in order, match a word to its meaning, and write your own sentence. Each exercise is one or two lines. Do NOT write the answers here.`,
+  };
+  const spec = labels.map((l, k) => `Page ${k + 1} "${l}": ${what[l]}`).join('\n');
+  const hasEx = labels.includes('Practice');
+  return `Write chapter ${i + 1} of the language-learning book "${clip(b.bible?.title, 80)}". The learners study ${lang}.
+Learner level: ${levelLine(b)}. Language of the lesson: ${lang}${gloss ? `; key words also get a ${gloss} translation` : ''}.
+Cast (use these exact names in the dialogue, nobody else is named):
+${chars}
+All chapters:
+${all}
+This chapter: "${clip(cur.title, 80)}" - ${clip(cur.summary, 300)} Goal: ${clip(cur.lesson, 90)}. Setting: ${clip(cur.setting, 150)}.
+Write exactly ${beats} pages:
+${spec}
+Keep every page under 140 words. Plain text only: no markdown, no asterisks, no tables. Separate lines with \\n. Be accurate: every sentence must be correct and natural ${lang}.
+${hasEx ? 'Also write "answers": the answers to every numbered exercise of this chapter, one per line, numbered like the exercises (for example "1. b", "2. true"), at most 10 lines.' : 'Set "answers" to an empty string.'}
+
+Return this JSON shape:
+{ "pages": [ { "text": "page text", "scene": "what the illustration shows: place, action, which characters by name, lighting, camera angle (25-45 words, no text or letters in the picture). Never describe their clothes or hair" } ], "answers": "the answers" }
+"pages" has exactly ${beats} items, in the order above.
+${IP_RULE}${avoidLine(b)}`;
+}
+
 function storyPrompt(b) {
+  if (isLearn(b)) return learnPrompt(b);
   const a = AGE[b.age] || AGE['6-8'];
   const beats = num(b.beats, 2, 1, 4);
   const chars = (b.bible?.characters || []).map(c => `- ${clip(c.name, 30)}: ${clip(c.role, 80)}; looks: ${clip(c.look, 200)}`).join('\n');
@@ -148,7 +225,27 @@ Return this JSON shape:
 ${IP_RULE}${avoidLine(b)}`;
 }
 
+function listingLearn(b) {
+  const titles = (b.bible?.stories || []).map(s => clip(s.title, 80)).join('; '), lang = clip(b.lang, 30) || 'English';
+  return `Prepare the Amazon KDP listing for this illustrated language-learning book (learners of ${lang}, level ${clip(b.level, 3) || 'A2'}).
+Title: "${clip(b.bible?.title, 80)}". Subtitle: "${clip(b.bible?.subtitle, 100)}". Language: ${lang}.
+Chapters inside: ${titles}. Every chapter has key words, a dialogue, practice exercises, and the book ends with an answer key.
+Return this JSON shape:
+{
+ "title": "title for KDP (max 120 chars)",
+ "subtitle": "subtitle for KDP (max 120 chars, includes the level and the number of chapters)",
+ "description": "book description for the Amazon page, 120-200 words, plain text with paragraphs separated by \\n, says who it is for and what the learner can do afterwards, no trademarks, no promises of results or sales",
+ "back_cover": "back-cover blurb, 50-80 words, plain text",
+ "keywords": ["exactly 7 search phrases, each max 50 characters, no trademarked names, no repeating words from the title"],
+ "categories": ["3 KDP category paths such as Reference > Foreign Languages > English as a Second Language, or Education & Teaching > Foreign Language Study"],
+ "reading_age": { "min": 18, "max": 18 },
+ "cover_prompt": "illustration brief for the FRONT COVER picture: the main characters by name in one friendly scene that matches the topic, 30-50 words, no text or letters"
+}
+${IP_RULE}${avoidLine(b)}`;
+}
+
 function listingPrompt(b) {
+  if (isLearn(b)) return listingLearn(b);
   const titles = (b.bible?.stories || []).map(s => clip(s.title, 80)).join('; ');
   return `Prepare the Amazon KDP listing for this illustrated ${isAdult(b) ? 'storybook for adult readers' : 'children\'s paperback'}.
 Title: "${clip(b.bible?.title, 80)}". Subtitle: "${clip(b.bible?.subtitle, 100)}". Reader age: ${b.age || '6-8'}. Language: ${clip(b.lang, 30) || 'English'}.
@@ -240,7 +337,7 @@ export async function onRequestPost(ctx) {
     }
     if (b.action === 'story') {
       if (!b.bible) return json({ error: 'Missing bible' }, 400);
-      return json({ ok: true, data: await chat(env, sysFor(b), storyPrompt(b), 1800) });
+      return json({ ok: true, data: await chat(env, sysFor(b), storyPrompt(b), isLearn(b) ? 2400 : 1800) });
     }
     if (b.action === 'listing') {
       if (!b.bible) return json({ error: 'Missing bible' }, 400);
