@@ -105,8 +105,9 @@
   }
   function paintStyles() {
     var learn = B && B.kind === 'learn', ks = Object.keys(STYLES).filter(function (k) { return !!STYLES[k].learn === !!learn || !!STYLES[k].both; });
-    $('#style').innerHTML = ks.map(function (k) { return '<option value="' + k + '">' + esc(STYLES[k].label) + '</option>'; }).join('');
-    if (B) { if (ks.indexOf(B.style) < 0) B.style = ks[0]; $('#style').value = B.style; }
+    var opts = ks.map(function (k) { return '<option value="' + k + '">' + esc(STYLES[k].label) + '</option>'; }).join('');
+    $('#style').innerHTML = opts; $('#style2').innerHTML = opts;
+    if (B) { if (ks.indexOf(B.style) < 0) B.style = ks[0]; $('#style').value = B.style; $('#style2').value = B.style; }
   }
   function applyKind() {                          // Story book / Learning book
     var learn = B.kind === 'learn';
@@ -158,6 +159,7 @@
     var id = e && e.target && e.target.id;
     if (id && FIELDS[id]) B[FIELDS[id]] = ['nStories', 'beats'].indexOf(id) >= 0 ? Math.max(1, Math.min(id === 'nStories' ? 12 : 4, parseInt(e.target.value, 10) || 1)) : e.target.value;
     if (e && e.type === 'change' && (id === 'nStories' || id === 'beats')) e.target.value = B[FIELDS[id]];      // show the number that is really used (the limit is 12 stories)
+    if (id === 'style') $('#style2').value = B.style;
     if (id === 'bleed') B.bleed = e.target.checked;
     if (id === 'seriesName') B.seriesName = e.target.value;
     if (id === 'seriesNo') B.seriesNo = e.target.value;
@@ -317,7 +319,7 @@
         '<input type="text" data-c="' + i + '" data-f="name" value="' + esc(c.name) + '" aria-label="Character name" maxlength="30">' +
         '<textarea rows="3" data-c="' + i + '" data-f="look" aria-label="How ' + esc(c.name) + ' looks" maxlength="260">' + esc(c.look) + '</textarea>' +
         (!RF[i] ? '<div class="acts"><button type="button" class="btn sm" data-act="portrait" data-c="' + i + '">Make portrait</button></div>' : '') +
-        (RF[i] ? '<div class="acts"><button type="button" class="btn sm ghost" data-act="portrait" data-c="' + i + '">New portrait</button><button type="button" class="btn sm ghost" data-act="ref" data-c="' + i + '">Change image</button><button type="button" class="btn sm" data-act="cleanref" data-c="' + i + '">Make a clean reference</button><button type="button" class="btn sm ghost danger" data-act="refdel" data-c="' + i + '">Remove image</button></div>' : '') + '</div>';
+        (RF[i] ? '<div class="acts"><button type="button" class="btn sm" data-act="restyle" data-c="' + i + '">Redraw in chosen style</button><button type="button" class="btn sm ghost" data-act="portrait" data-c="' + i + '">New portrait</button><button type="button" class="btn sm ghost" data-act="ref" data-c="' + i + '">Change image</button><button type="button" class="btn sm" data-act="cleanref" data-c="' + i + '">Make a clean reference</button><button type="button" class="btn sm ghost danger" data-act="refdel" data-c="' + i + '">Remove image</button></div>' : '') + '</div>';
     }).join('');
     $('#stories').innerHTML = B.stories.map(function (s, i) {
       var beats = (s.beats || []).map(function (b, j) {
@@ -436,6 +438,40 @@
       }
       if (idx.length) SF.toast('Character portraits ready. The pictures now use them, so each character looks the same on every page.', 5200);
     } finally { pgen(false); if (btn) btn.disabled = false; }
+  }
+  async function restylePortrait(i) {            // redraw the existing portrait in the chosen picture style, keeping the same person
+    var ch = B.characters[i]; if (!ch || !RF[i]) return;
+    if (count() >= DAILY_LIMIT) throw Object.assign(new Error('Daily picture limit reached (' + DAILY_LIMIT + '). It resets tomorrow.'), { fatal: true });
+    var st = STYLES[B.style] || STYLES['3d'], fd = new FormData();
+    fd.append('prompt', (st.photo ? 'Turn image 0 into a photorealistic studio photograph of the same real person (not a drawing, not a cartoon, not 3D): natural skin texture, real hair, real fabric, true-to-life proportions. ' : 'Redraw the character from image 0 in a new picture style. ') +
+      'Draw ONLY the character ' + ch.name + gTag(ch) + ': full body, standing straight, facing the camera with a gentle friendly expression, relaxed arms, plain light-grey background, soft even lighting. Keep exactly the same face shape, hair style and colour, skin tone, age, body build and outfit colours as image 0. ' + ch.look + '. STYLE: ' + st.p + '. One person only, no other people, no text, no watermark.');
+    fd.append('width', '768'); fd.append('height', '1024'); fd.append('seed', String(1 + Math.floor(Math.random() * 2000000000)));
+    fd.append('input_image_0', RF[i].blob, 'ref.jpg');
+    var last;
+    for (var a = 1; a <= 3; a++) {
+      try {
+        var r = await fetch('/api/ai?mode=ref', { method: 'POST', body: fd });
+        if (r.status === 429) throw Object.assign(new Error('Daily limit reached on the server. Try again tomorrow.'), { fatal: true });
+        var ct = r.headers.get('content-type') || '';
+        if (!r.ok || ct.indexOf('image') < 0) { var j = null; try { j = await r.json(); } catch (e) {} throw new Error(apiErr(r, j)); }
+        var bl = await shrink(await r.blob()); bump();
+        URL.revokeObjectURL(RF[i].url); RF[i] = { blob: bl, url: URL.createObjectURL(bl) };
+        await SF.store.putImg(B.id, 'ref' + i, bl); return;
+      } catch (e) { last = e; if (e.fatal) throw e; await SF.sleep(1500 * a); }
+    }
+    throw last;
+  }
+  async function restyleAll() {
+    var idx = B.characters.map(function (_, i) { return i; }).filter(function (i) { return RF[i]; });
+    if (!idx.length) { SF.toast('Make the portraits first.'); return; }
+    var btn = $('#btnRestyle'); btn.disabled = true;
+    try {
+      for (var k = 0; k < idx.length; k++) {
+        pgen(true, 'Redrawing the portraits… ' + (k + 1) + ' of ' + idx.length + ' (' + B.characters[idx[k]].name + ')', 0.03 + 0.9 * k / idx.length);
+        await restylePortrait(idx[k]); renderStory();
+      }
+      SF.toast('Portraits redrawn in "' + (STYLES[B.style] || {}).label + '". The next pictures use them.', 5200);
+    } finally { pgen(false); btn.disabled = false; }
   }
   async function delRef(i) {
     if (RF[i]) URL.revokeObjectURL(RF[i].url); delete RF[i];
@@ -779,6 +815,7 @@
       var p = e.target.closest('[data-act=ref]'), d = e.target.closest('[data-act=refdel]');
       if (d) delRef(+d.dataset.c);
       var cr = e.target.closest('[data-act=cleanref]'); if (cr) cleanRef(+cr.dataset.c);
+      var rs = e.target.closest('[data-act=restyle]'); if (rs) { rs.disabled = true; rs.textContent = 'Redrawing…'; pgen(true, 'Redrawing the portrait…', 0.3); restylePortrait(+rs.dataset.c).then(function () { renderStory(); SF.toast('Portrait redrawn.'); }, function (er) { SF.toast(er.message || 'Could not redraw the portrait.', 5000); renderStory(); }).then(function () { pgen(false); }); }
       var pt = e.target.closest('[data-act=portrait]'); if (pt) { pt.disabled = true; pt.textContent = 'Painting…'; pgen(true, 'Painting the portrait…', 0.3); makePortrait(+pt.dataset.c).then(function () { renderStory(); SF.toast('Portrait ready.'); }, function (er) { SF.toast(er.message || 'Could not make the portrait.', 5000); renderStory(); }).then(function () { pgen(false); }); }
       if (p) { refFor = +p.dataset.c; if (!refIn) { refIn = document.createElement('input'); refIn.type = 'file'; refIn.accept = 'image/*'; refIn.onchange = function () { var f = refIn.files[0]; refIn.value = ''; setRef(f); }; } refIn.click(); }
     });
@@ -795,6 +832,8 @@
     $$('input[name=upfit]').forEach(function (r) { r.onchange = function () { B.upFit = r.value; save(); }; });
     $('#btnAllPics').onclick = function () { runPics(missing()); };
     $('#btnPortraits').onclick = function () { lockCharacters(false).catch(function (er) { SF.toast(er.message || 'Could not make the portraits.', 5000); }); };
+    $('#btnRestyle').onclick = function () { restyleAll().catch(function (er) { SF.toast(er.message || 'Could not redraw the portraits.', 5000); }); };
+    $('#style2').addEventListener('change', function (e) { B.style = e.target.value; $('#style').value = B.style; save(); });
     $('#autoLock').addEventListener('change', function (e) { B.autoLock = e.target.checked; save(); });
     $('#btnStopPics').onclick = function () { picStop = true; };
     $('#coverHasT').addEventListener('change', function (e) { B.coverHasTitle = e.target.checked; save(); coverTitleCheck(); });

@@ -237,6 +237,7 @@ details.more summary small{font:400 13px Nunito;color:var(--dim);margin-left:8px
 .bar{padding:12px 16px calc(12px + env(safe-area-inset-bottom))}
 body{padding-bottom:calc(96px + env(safe-area-inset-bottom))}
 h3{font-size:20px}
+.chars .c{grid-template-columns:84px minmax(0,1fr)}.chars .c input,.chars .c textarea{min-width:0}.chars .c .acts .btn{flex:1 1 auto}
 </style>
 </head>
 </head>
@@ -364,8 +365,9 @@ h3{font-size:20px}
       <div class="field"><label for="bDed">Dedication</label><input type="text" id="bDed" maxlength="160"></div>
       <h3 style="margin-top:28px">Characters</h3>
       <p class="refnote">Tap the square to add a reference image of the character, then press <b>Make a clean reference</b>. The pictures use that image to keep the same face, age and outfit in every page.</p>
-      <div class="btns" style="margin:12px 0 4px"><button class="btn" id="btnPortraits" type="button">Create all character portraits</button></div>
-      <p class="refnote">The magic step: paint each character once. Every picture after that is drawn from these portraits, so faces, hair and outfits stay the same from page to page. Not happy with one? Press <b>New portrait</b>.</p>
+      <div class="field"><label for="style2">Picture style (used for the portraits and every picture)</label><select id="style2"></select></div>
+      <div class="btns" style="margin:12px 0 4px"><button class="btn" id="btnPortraits" type="button">Create all character portraits</button><button class="btn ghost" id="btnRestyle" type="button">Redraw portraits in this style</button></div>
+      <p class="refnote">The magic step: paint each character once. Every picture after that is drawn from these portraits, so faces, hair and outfits stay the same from page to page. Already made them in another style? Pick <b>Realistic photo style</b> above and press <b>Redraw portraits in this style</b>: the same people, redrawn.</p>
       <div class="chars" id="chars"></div>
       <h3 style="margin-top:28px">Stories</h3>
       <div id="stories"></div>
@@ -423,6 +425,6 @@ h3{font-size:20px}
 <script src="app3.js?v=5"></script>
 <script src="app2.js?v=14"></script>
 <script src="app4.js?v=3"></script>
-<script src="app1.js?v=31"></script>
+<script src="app1.js?v=32"></script>
 </body>
 </html>
