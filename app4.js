@@ -71,8 +71,8 @@
       var y = top + 150 + size;
       lines.forEach(function (ln) { outlinedText(g, ln, W / 2, y, size, '#FFFFFF'); y += size * 1.08; });
       if (book.subtitle) { g.font = '700 70px ' + font; wrapCanvas(g, book.subtitle, W - 300).slice(0, 2).forEach(function (ln) { y += 12; outlinedText(g, ln, W / 2, y + 60, 70, '#FFD27A'); y += 74; }); }
-      if (name) { g.font = '700 84px ' + font; outlinedText(g, name, W / 2, top + picH - 70, 84, '#FFFFFF'); }
-    } else if (book.coverFixAuthor && name) { g.font = '700 84px ' + font; outlinedText(g, name, W / 2, top + picH - 70, 84, '#FFFFFF'); }
+    }
+    if (name && (!book.coverHasTitle || book.coverFixAuthor)) { g.textAlign = 'right'; g.font = '700 56px ' + font; outlinedText(g, name, W - 90, top + picH - 80, 56, '#FFFFFF'); g.textAlign = 'center'; }
     var bytes = await jpegBytes(c, 0.93); c.width = c.height = 1;
     return bytes;
   };

@@ -403,9 +403,10 @@
       var sl = wrap(body, 17, book.subtitle, safeW).slice(0, 2);
       ty -= 8; sl.forEach(function (ln) { ty -= 20; outlined(body, ln, 17, fcx, ty, hex(P, '#FFD27A')); });
     }
-    if (book.author) outlined(dispB, book.author, 22, fcx, b + 0.32 * IN, white);
     }
-    if (book.coverHasTitle && book.coverFixAuthor && book.author) outlined(dispB, book.author, 22, frontX + (tw + hinge) / 2, b + 0.32 * IN, white);
+    // author: small, bottom right corner of the front
+    function authorName() { var an = book.author, as = 14, aw = dispB.widthOfTextAtSize(an, as); outlined(dispB, an, as, frontX + tw - 0.5 * IN - aw / 2, b + 0.34 * IN, white); }
+    if (book.author && (!book.coverHasTitle || book.coverFixAuthor)) authorName();
     // back cover
     var light_bg = lum(back) > 0.6, tc = light_bg ? navy : white, bx = b + 0.6 * IN, bw = tw - 1.2 * IN - hinge;
     if (book.backCover) {
