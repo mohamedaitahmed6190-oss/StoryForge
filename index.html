@@ -14,8 +14,8 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/nunito@5/400.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/nunito@5/700.css">
 <style>
-:root{--bg:#0C101C;--bg2:#10162A;--card:#151C32;--card2:#1B2440;--line:#27324F;--ink:#EEF1F8;--soft:#9BA7C4;--dim:#6F7C9E;--amber:#FFB547;--coral:#FF6F59;--teal:#3DD6B5;--ok:#3DD6B5;--warn:#FFB547;--bad:#FF6B7F;--paper:#FBF8F1;--ar:1/1;--r:14px;--glow:#1D2A55;--chrome:rgba(12,16,28,.88);--opt:#151C32;color-scheme:dark}
-:root[data-theme=light]{--bg:#F6F3EC;--bg2:#ECE8DD;--card:#FFFFFF;--card2:#F4F1E8;--line:#D9D3C4;--ink:#1A2038;--soft:#4D5876;--dim:#737B96;--amber:#F29A1F;--coral:#F0674F;--teal:#0E9F85;--ok:#0C8A73;--warn:#A86500;--bad:#D0344B;--glow:#FBE6C4;--chrome:rgba(246,243,236,.9);--opt:#FFFFFF;color-scheme:light}
+:root{--bg:#0C101C;--bg2:#10162A;--card:#151C32;--card2:#1B2440;--line:#27324F;--ink:#EEF1F8;--soft:#9BA7C4;--dim:#6F7C9E;--amber:#FFB547;--coral:#FF6F59;--teal:#3DD6B5;--ok:#3DD6B5;--warn:#FFB547;--bad:#FF6B7F;--paper:#FBF8F1;--ar:1/1;--r:14px;--glow:#1D2A55;--chrome:rgba(12,16,28,.88);--opt:#151C32;--field:#10162A;--sh:0 1px 2px rgba(0,0,0,.25),0 14px 34px -18px rgba(0,0,0,.6);color-scheme:dark}
+:root[data-theme=light]{--bg:#F5F2EA;--bg2:#EFEBE0;--card:#FFFFFF;--card2:#F4F1E8;--line:#D9D3C4;--ink:#1A2038;--soft:#4D5876;--dim:#737B96;--amber:#F29A1F;--coral:#F0674F;--teal:#0E9F85;--ok:#0C8A73;--warn:#A86500;--bad:#D0344B;--glow:#FBE6C4;--chrome:rgba(246,243,236,.92);--opt:#FFFFFF;--field:#FFFFFF;--sh:0 1px 2px rgba(26,32,56,.06),0 14px 34px -20px rgba(26,32,56,.28);color-scheme:light}
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%;background:var(--bg)}
 body{margin:0;background:radial-gradient(900px 420px at 85% -80px,var(--glow) 0,transparent 70%),var(--bg);color:var(--ink);font:400 16px/1.55 Nunito,system-ui,sans-serif;padding-bottom:calc(92px + env(safe-area-inset-bottom));min-height:100vh}
@@ -169,98 +169,190 @@ dialog .btns{justify-content:flex-end;margin-bottom:0}
 .books .bk .n small{color:var(--dim)}
 #toast{position:fixed;left:50%;bottom:calc(98px + env(safe-area-inset-bottom));transform:translate(-50%,20px);background:#fff;color:#12182B;padding:11px 18px;border-radius:12px;font-size:14px;font-weight:700;opacity:0;pointer-events:none;transition:.25s;z-index:60;max-width:90vw;text-align:center;box-shadow:0 14px 30px -10px rgba(0,0,0,.7)}
 #toast.on{opacity:1;transform:translate(-50%,0)}
+
+/* ===== v2 design ===== */
+body{background:radial-gradient(1000px 460px at 90% -120px,var(--glow) 0,transparent 70%),var(--bg);font-size:16px;line-height:1.6}
+.wrap{max-width:1080px;padding:0 20px}
+.top{display:block;max-width:none;padding:0;border-bottom:1px solid var(--line);background:var(--chrome);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.top .in{max-width:1080px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.brand{align-items:center;gap:12px;line-height:1.15}
+.brand small{display:block;font:400 12px Nunito;letter-spacing:0;color:var(--dim);margin-top:2px}
+.mark{width:40px;height:40px;border-radius:12px}
+.top .r{gap:8px}
+.btn.icon{width:40px;min-height:40px;padding:0;border-radius:50%}
+.btn.icon svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+@media(max-width:640px){.brand small{display:none}#counter{display:none}.top .in{padding:10px 14px}}
+.steps{border-bottom:1px solid var(--line)}
+.steps ul{max-width:1080px;padding:6px 20px;gap:8px}
+.steps button{flex-direction:row;justify-content:center;gap:9px;padding:9px 6px;font-size:14px}
+.steps button b{width:28px;height:28px;flex:none}
+.steps button[aria-current=step]{background:var(--card);box-shadow:var(--sh);color:var(--ink)}
+@media(max-width:560px){.steps button{flex-direction:column;gap:3px;font-size:12.5px;padding:6px 2px}}
+.panel{padding:34px 0 40px}
+#p2,#p3,#p4{max-width:860px;margin-inline:auto}
+.kick{font:800 12px Nunito;letter-spacing:.14em;text-transform:uppercase;color:var(--amber);margin-bottom:8px}
+h2{font-size:clamp(27px,4.4vw,40px);letter-spacing:-.02em}
+.lead{font-size:17px;margin:12px 0 28px;max-width:60ch}
+.p1grid{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:28px;align-items:start}
+@media(max-width:940px){.p1grid{grid-template-columns:1fr}}
+.sec{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:26px;margin:0 0 20px;box-shadow:var(--sh)}
+@media(max-width:560px){.sec{padding:20px 16px;border-radius:18px}}
+.sh2{display:flex;gap:14px;align-items:center;margin-bottom:6px;padding-bottom:18px;border-bottom:1px solid var(--line)}
+.sh2 .n{width:34px;height:34px;border-radius:50%;flex:none;display:grid;place-items:center;font:800 16px 'Bricolage Grotesque';background:linear-gradient(135deg,var(--amber),var(--coral));color:#1A1220}
+.sh2 h3{font-size:21px}
+.sh2 p{font-size:14px;color:var(--soft);margin-top:2px}
+.sec .field{margin:20px 0 0}
+.sec .field>label,.sec .field>legend{font-size:14px;color:var(--ink);margin-bottom:8px}
+.sec .field>label em{font-style:normal;font-weight:400;color:var(--dim)}
+input[type=text],input[type=number],select,textarea{background:var(--field);border-radius:12px;min-height:50px}
+.seg.big span{min-height:52px;line-height:32px;font-size:16px}
+.seg{background:var(--field)}
+.chips{gap:8px;margin-top:12px}
+.chip{background:var(--bg2);border-color:transparent;font-size:13px;padding:8px 13px;border-radius:12px}
+.hint{font-size:13px;margin-top:6px}
+.fmt{grid-template-columns:repeat(4,1fr);gap:10px}
+@media(max-width:700px){.fmt{grid-template-columns:1fr 1fr}}
+.fmt button{flex-direction:row;align-items:center;gap:11px;padding:14px;min-height:72px;border-radius:14px;background:var(--field)}
+.fmt button svg{width:26px;height:26px;flex:none;fill:none;stroke:var(--soft);stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.fmt button.on svg{stroke:var(--amber)}
+.fmt button span{display:flex;flex-direction:column;gap:1px;min-width:0}
+.fmt button b{font-size:15px}.fmt button small{font-size:12px;line-height:1.3}
+@media(min-width:701px){.fmt{grid-template-columns:1fr 1fr}}
+details.more{margin:22px 0 0;background:var(--bg2);border-color:transparent}
+details.more summary small{font:400 13px Nunito;color:var(--dim);margin-left:8px}
+.p1side{position:sticky;top:84px}
+@media(max-width:940px){.p1side{position:static}}
+.sidec{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:22px;box-shadow:var(--sh)}
+.sidec h3{font-size:19px;margin-bottom:12px}
+.sidesum{margin:0 0 14px;font-size:14px}
+.sidesum div{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--line)}
+.sidesum dt{color:var(--soft)}.sidesum dd{margin:0;font-weight:700;text-align:right}
+.sidec .est{margin:0 0 16px;font-size:13.5px}
+.sidec .btn{width:100%}
+.sidec .btn.ghost{margin-top:10px;min-height:42px}
+.btn{border-radius:12px;transition:filter .15s,border-color .15s,background .15s}
+.btn.big{min-height:54px;font-size:17px;border-radius:14px}
+.card,.story,.checks,.chars .c,.prog,.sum span{box-shadow:var(--sh)}
+.story{padding:14px 18px 12px;border-radius:16px}
+.bar{padding:12px 16px calc(12px + env(safe-area-inset-bottom))}
+body{padding-bottom:calc(96px + env(safe-area-inset-bottom))}
+h3{font-size:20px}
 </style>
 </head>
 </head>
 <body>
-<header class="top">
+<header class="top"><div class="in">
   <div class="brand">
     <span class="mark"><svg width="20" height="20" viewBox="0 0 24 24" fill="#1A1220" aria-hidden="true"><path d="M5 3h11a3 3 0 013 3v14l-4-2.5L11 20V6a3 3 0 00-3-3z" opacity=".9"/><path d="M17.5 1l.9 2.1L20.5 4l-2.1.9L17.5 7l-.9-2.1L14.5 4l2.1-.9z"/></svg></span>
-    StoryForge
+    <span>StoryForge<small>Picture &amp; learning books for KDP</small></span>
   </div>
-  <div class="r"><button class="btn ghost sm" id="btnTheme" aria-label="Switch between light and dark mode" title="Light / dark"></button><span id="counter" title="Pictures made today"></span><button class="btn ghost sm" id="btnBooks">My books</button><button class="btn ghost sm danger" id="btnReset" title="Delete everything and start a new book">New</button></div>
-</header>
+  <div class="r"><span id="counter" title="Pictures made today"></span><button class="btn ghost sm" id="btnBooks">My books</button><button class="btn ghost sm danger" id="btnReset" title="Delete everything and start a new book">New</button><button class="btn ghost icon" id="btnTheme" aria-label="Switch between light and dark mode" title="Light / dark"></button></div>
+</div></header>
 <nav class="steps" aria-label="Steps"><ul id="steps">
-  <li><button data-step="1"><b>1</b>Idea</button></li>
-  <li><button data-step="2"><b>2</b>Story</button></li>
-  <li><button data-step="3"><b>3</b>Pictures</button></li>
-  <li><button data-step="4"><b>4</b>Export</button></li>
+  <li><button data-step="1"><b>1</b><span>Idea</span></button></li>
+  <li><button data-step="2"><b>2</b><span>Story</span></button></li>
+  <li><button data-step="3"><b>3</b><span>Pictures</span></button></li>
+  <li><button data-step="4"><b>4</b><span>Export</span></button></li>
 </ul></nav>
 
 <main class="wrap">
   <!-- 1 IDEA -->
   <section class="panel on" id="p1">
-    <h2>Turn one idea into a KDP-ready picture book</h2>
-    <p class="lead">Describe it in a sentence or two. StoryForge writes the stories and the dialogue, paints the pictures and lays out the pages to match Amazon KDP's print rules.</p>
-    <fieldset class="field" style="margin-top:0"><legend>Book type</legend>
-      <div class="seg" role="radiogroup">
-        <label><input type="radio" name="kind" value="story" checked><span>Story book</span></label>
-        <label><input type="radio" name="kind" value="learn"><span>Learning book</span></label>
-      </div>
-      <div class="hint" id="kindNote"></div>
-    </fieldset>
-    <div class="card field" style="margin-top:0">
-      <label for="idea">Your idea</label>
-      <textarea id="idea" rows="4" maxlength="900" placeholder="Three kids find a glowing map in their grandfather's attic and sail to a chain of hidden islands."></textarea>
-      <div class="chips" id="chips"></div>
-    </div>
-    <div class="field"><label for="cast">Main characters (optional)</label><input type="text" id="cast" maxlength="120" placeholder="e.g. Ben, Emma and Jack"><div class="hint">Type the names you want. The book will use exactly these names, and nobody else.</div></div>
-    <fieldset class="field" id="ageField"><legend>Reader age</legend>
-      <div class="seg" role="radiogroup">
-        <label><input type="radio" name="age" value="3-5"><span>3–5</span></label>
-        <label><input type="radio" name="age" value="6-8" checked><span>6–8</span></label>
-        <label><input type="radio" name="age" value="9-12"><span>9–12</span></label>
-        <label><input type="radio" name="age" value="6-12"><span>6–12</span></label>
-        <label><input type="radio" name="age" value="18+"><span>18+</span></label>
-      </div>
-    </fieldset>
-    <div class="row stack" id="learnBox" hidden>
-      <div class="field"><label for="level">Learner level</label>
-        <select id="level"><option value="A1">Beginner (A1)</option><option value="A2" selected>Elementary (A2)</option><option value="B1">Intermediate (B1)</option><option value="B2">Upper-intermediate (B2)</option></select></div>
-      <div class="field"><label for="gloss">Translate the key words into</label>
-        <select id="gloss"><option value="">No translation</option><option>French</option><option>Spanish</option><option>Portuguese</option><option>German</option><option>Italian</option></select></div>
-    </div>
-    <div class="row">
-      <div class="field"><label for="nStories"><span id="nLbl">Number of stories</span></label><input type="number" id="nStories" min="1" max="12" value="7" inputmode="numeric"></div>
-      <div class="field"><label for="beats"><span id="bLbl">Pages of text per story</span></label>
-        <select id="beats"><option value="1">1 (short)</option><option value="2">2</option><option value="3" selected>3 (recommended)</option><option value="4">4 (long)</option></select></div>
-    </div>
-    <div class="row stack">
-      <div class="field"><label for="style">Picture style</label><select id="style"></select></div>
-      <div class="field"><label for="lang">Language</label>
-        <select id="lang"><option>English</option><option>French</option><option>Spanish</option><option>German</option><option>Italian</option><option>Portuguese</option></select></div>
-    </div>
-    <div class="field fmtbox"><label id="fmtLbl">KDP format</label>
-      <div class="fmt" id="fmtCards" role="group" aria-labelledby="fmtLbl">
-        <button type="button" data-fmt="paperback" aria-pressed="true"><b>Paperback</b><small>Print · 24+ pages</small></button>
-        <button type="button" data-fmt="hardcover" aria-pressed="false"><b>Hardcover</b><small>Print · 75–550 pages</small></button>
-        <button type="button" data-fmt="ebook" aria-pressed="false"><b>Kindle eBook</b><small>Digital · 1600 × 2560 px</small></button>
-        <button type="button" data-fmt="series" aria-pressed="false"><b>Series page</b><small>No size · links books</small></button>
-      </div>
-      <div class="hint" id="fmtNote"></div>
-      <div class="seriesbox" id="seriesBox" hidden>
+    <p class="kick">Step 1 of 4</p>
+    <h2>Turn one idea into a KDP-ready book</h2>
+    <p class="lead">Describe it in a sentence or two. StoryForge writes the text, paints the pictures and lays out the pages to match Amazon KDP's rules.</p>
+    <div class="p1grid">
+    <div class="p1main">
+
+      <section class="sec">
+        <header class="sh2"><span class="n">1</span><div><h3>Your idea</h3><p>What is the book about?</p></div></header>
+        <fieldset class="field"><legend>Book type</legend>
+          <div class="seg big" role="radiogroup">
+            <label><input type="radio" name="kind" value="story" checked><span>Story book</span></label>
+            <label><input type="radio" name="kind" value="learn"><span>Learning book</span></label>
+          </div>
+          <div class="hint" id="kindNote"></div>
+        </fieldset>
+        <div class="field"><label for="idea">Your idea</label>
+          <textarea id="idea" rows="4" maxlength="900" placeholder="Three kids find a glowing map in their grandfather's attic and sail to a chain of hidden islands."></textarea>
+          <div class="chips" id="chips"></div></div>
         <div class="row stack">
-          <div class="field"><label for="seriesName">Series title</label><input type="text" id="seriesName" maxlength="200" placeholder="e.g. The Lost Island Adventures"></div>
-          <div class="field"><label for="seriesNo">Book number</label><input type="text" id="seriesNo" maxlength="4" inputmode="numeric" placeholder="1"></div>
+          <div class="field"><label for="cast">Main characters <em>(optional)</em></label><input type="text" id="cast" maxlength="120" placeholder="e.g. Ben, Emma and Jack"><div class="hint">The book uses exactly these names, and nobody else.</div></div>
+          <div class="field"><label for="author">Author name</label><input type="text" id="author" autocomplete="name" placeholder="Shown on the title page and the cover"></div>
         </div>
-        <div class="hint">A Series page has no size and no file. It links your paperback, hardcover and eBook under one series on Amazon. Use the same series name on every book, then add it in KDP with "Add series details".</div>
-      </div>
+      </section>
+
+      <section class="sec">
+        <header class="sh2"><span class="n">2</span><div><h3>Readers and look</h3><p>Who will read it, in which language, and how the pictures look.</p></div></header>
+        <fieldset class="field" id="ageField"><legend>Reader age</legend>
+          <div class="seg" role="radiogroup">
+            <label><input type="radio" name="age" value="3-5"><span>3–5</span></label>
+            <label><input type="radio" name="age" value="6-8" checked><span>6–8</span></label>
+            <label><input type="radio" name="age" value="9-12"><span>9–12</span></label>
+            <label><input type="radio" name="age" value="6-12"><span>6–12</span></label>
+            <label><input type="radio" name="age" value="18+"><span>18+</span></label>
+          </div>
+        </fieldset>
+        <div class="row stack" id="learnBox" hidden>
+          <div class="field"><label for="level">Learner level</label>
+            <select id="level"><option value="A1">Beginner (A1)</option><option value="A2" selected>Elementary (A2)</option><option value="B1">Intermediate (B1)</option><option value="B2">Upper-intermediate (B2)</option></select></div>
+          <div class="field"><label for="gloss">Translate the key words into</label>
+            <select id="gloss"><option value="">No translation</option><option>French</option><option>Spanish</option><option>Portuguese</option><option>German</option><option>Italian</option></select></div>
+        </div>
+        <div class="row stack">
+          <div class="field"><label for="lang">Language of the book</label>
+            <select id="lang"><option>English</option><option>French</option><option>Spanish</option><option>German</option><option>Italian</option><option>Portuguese</option></select></div>
+          <div class="field"><label for="style">Picture style</label><select id="style"></select></div>
+        </div>
+      </section>
+
+      <section class="sec">
+        <header class="sh2"><span class="n">3</span><div><h3>Length and KDP format</h3><p>Every format has its own measurements. They are filled in for you.</p></div></header>
+        <div class="row stack">
+          <div class="field"><label for="nStories"><span id="nLbl">Number of stories</span></label><input type="number" id="nStories" min="1" max="12" value="7" inputmode="numeric"></div>
+          <div class="field"><label for="beats"><span id="bLbl">Pages of text per story</span></label>
+            <select id="beats"><option value="1">1 (short)</option><option value="2">2</option><option value="3" selected>3 (recommended)</option><option value="4">4 (long)</option></select></div>
+        </div>
+        <div class="field fmtbox"><label id="fmtLbl">KDP format</label>
+          <div class="fmt" id="fmtCards" role="group" aria-labelledby="fmtLbl">
+            <button type="button" data-fmt="paperback" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h10a3 3 0 013 3v13H8a3 3 0 01-3-3z"/><path d="M5 17a3 3 0 013-3h10"/></svg><span><b>Paperback</b><small>Print · 24+ pages</small></span></button>
+            <button type="button" data-fmt="hardcover" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5a2 2 0 012-2h12v15H6a2 2 0 00-2 2z"/><path d="M4 20a2 2 0 002 2h12v-4M9 7h5"/></svg><span><b>Hardcover</b><small>Print · 75–550 pages</small></span></button>
+            <button type="button" data-fmt="ebook" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M10.5 18.5h3"/></svg><span><b>Kindle eBook</b><small>Digital · 1600 × 2560 px</small></span></button>
+            <button type="button" data-fmt="series" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="8" width="7" height="12" rx="1.5"/><rect x="9" y="5" width="7" height="15" rx="1.5"/><path d="M18 8l3 1v10l-3 1"/></svg><span><b>Series page</b><small>No size · links books</small></span></button>
+          </div>
+          <div class="hint" id="fmtNote"></div>
+          <div class="seriesbox" id="seriesBox" hidden>
+            <div class="row stack">
+              <div class="field"><label for="seriesName">Series title</label><input type="text" id="seriesName" maxlength="200" placeholder="e.g. The Lost Island Adventures"></div>
+              <div class="field"><label for="seriesNo">Book number</label><input type="text" id="seriesNo" maxlength="4" inputmode="numeric" placeholder="1"></div>
+            </div>
+            <div class="hint">A Series page has no size and no file. It links your paperback, hardcover and eBook under one series on Amazon. Use the same series name on every book, then add it in KDP with "Add series details".</div>
+          </div>
+        </div>
+        <details class="more"><summary>Print setup <small>trim size, paper, bleed</small></summary>
+          <div class="row stack">
+            <div class="field"><label for="trim">Trim size</label><select id="trim"></select></div>
+            <div class="field" id="paperField"><label for="paper">Paper and ink</label><select id="paper"></select></div>
+          </div>
+          <div class="chk" id="bleedChk"><input type="checkbox" id="bleed" checked><label for="bleed"><b>Pictures run to the page edge (bleed)</b><div class="hint">Adds 0.125 in around the outer edges, as KDP requires for full-page art.</div></label></div>
+          <div class="chk"><input type="checkbox" id="aiNotice" checked><label for="aiNotice"><b>Mention AI help on the copyright page</b><div class="hint">KDP asks you to disclose AI-generated text and images in its own form either way.</div></label></div>
+        </details>
+      </section>
     </div>
-    <details class="more"><summary>Print setup</summary>
-      <div class="field"><label for="author">Author name</label><input type="text" id="author" autocomplete="name" placeholder="Shown on the title page and the cover"></div>
-      <div class="row stack">
-        <div class="field"><label for="trim">Trim size</label><select id="trim"></select></div>
-        <div class="field" id="paperField"><label for="paper">Paper and ink</label><select id="paper"></select></div>
-      </div>
-      <div class="chk" id="bleedChk"><input type="checkbox" id="bleed" checked><label for="bleed"><b>Pictures run to the page edge (bleed)</b><div class="hint">Adds 0.125 in around the outer edges, as KDP requires for full-page art.</div></label></div>
-      <div class="chk"><input type="checkbox" id="aiNotice" checked><label for="aiNotice"><b>Mention AI help on the copyright page</b><div class="hint">KDP asks you to disclose AI-generated text and images in its own form either way.</div></label></div>
-    </details>
-    <div class="btns"><button class="btn red" id="btnWrite">Write my book</button><button class="btn ghost danger" id="btnReset2">Delete all and start over</button></div>
-    <p class="est" id="estimate"></p>
+
+    <aside class="p1side"><div class="sidec">
+      <h3>Your book</h3>
+      <dl class="sidesum" id="sideSum"></dl>
+      <p class="est" id="estimate"></p>
+      <button class="btn red big" id="btnWrite">Write my book</button>
+      <button class="btn ghost danger sm" id="btnReset2">Delete all and start over</button>
+    </div></aside>
+    </div>
   </section>
 
   <!-- 2 STORY -->
   <section class="panel" id="p2">
+    <p class="kick">Step 2 of 4</p>
     <h2>Check the story</h2>
     <p class="lead">Everything is editable. Each character's look (and reference image, if you add one) is repeated in every picture, so they stay the same.</p>
     <div class="chk"><input type="checkbox" class="cpOpt" id="cpOpt2" checked><label for="cpOpt2"><b>Add the KDP picture size under the page text when I copy</b><div class="hint">Only the size line is added. No scene, no characters.</div></label></div>
@@ -281,6 +373,7 @@ dialog .btns{justify-content:flex-end;margin-bottom:0}
 
   <!-- 3 PICTURES -->
   <section class="panel" id="p3">
+    <p class="kick">Step 3 of 4</p>
     <h2>Make the pictures</h2>
     <p class="lead" id="picInfo"></p>
     <div class="btns"><button class="btn red" id="btnAllPics">Make all missing pictures</button><button class="btn ghost" id="btnStopPics" hidden>Stop</button></div>
@@ -299,6 +392,7 @@ dialog .btns{justify-content:flex-end;margin-bottom:0}
 
   <!-- 4 EXPORT -->
   <section class="panel" id="p4">
+    <p class="kick">Step 4 of 4</p>
     <h2>Export for KDP</h2>
     <div class="sum" id="sumLine"></div>
     <div class="btns"><button class="btn red" id="btnInterior">Download interior PDF</button><button class="btn" id="btnCover">Download cover PDF</button></div>
@@ -322,10 +416,10 @@ dialog .btns{justify-content:flex-end;margin-bottom:0}
 <dialog id="booksDlg"><h3>My books</h3><div class="books" id="booksList"></div><div class="btns" style="justify-content:flex-start"><button class="btn sm red" id="booksBook2">Load Book 2: The Moonlight Map</button><button class="btn sm ghost" id="booksImport">Import file</button></div><div class="btns"><button class="btn ghost" id="booksClose">Close</button><button class="btn" id="booksNew">New book</button></div></dialog>
 <div id="toast" role="status" aria-live="polite"></div>
 
-<script>(function(){var b=document.getElementById("btnTheme"),m=document.getElementById("themeMeta");function paint(){var l=document.documentElement.dataset.theme==="light";b.textContent=l?"Dark":"Light";m.content=l?"#F6F3EC":"#0D1220"}paint();b.onclick=function(){var n=document.documentElement.dataset.theme==="light"?"dark":"light";document.documentElement.dataset.theme=n;try{localStorage.setItem("sf_theme",n)}catch(e){}paint()}})();</script>
+<script>(function(){var b=document.getElementById("btnTheme"),m=document.getElementById("themeMeta");var SUN='<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>',MOON='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 019.5 4 8 8 0 1020 14.5z"/></svg>';function paint(){var l=document.documentElement.dataset.theme==="light";b.innerHTML=l?MOON:SUN;m.content=l?"#F5F2EA":"#0D1220"}paint();b.onclick=function(){var n=document.documentElement.dataset.theme==="light"?"dark":"light";document.documentElement.dataset.theme=n;try{localStorage.setItem("sf_theme",n)}catch(e){}paint()}})();</script>
 <script src="app3.js?v=5"></script>
 <script src="app2.js?v=13"></script>
 <script src="app4.js?v=2"></script>
-<script src="app1.js?v=28"></script>
+<script src="app1.js?v=29"></script>
 </body>
 </html>

@@ -175,7 +175,17 @@
     var t = SF.trim(B.trim), bl = SF.bleedOf(B);
     document.documentElement.style.setProperty('--ar', (t.w + bl) + '/' + (t.h + 2 * bl));
   }
+  function sideSum() {
+    var el = $('#sideSum'); if (!el) return;
+    var fm = SF.fmt(B), learn = B.kind === 'learn', t = SF.trim(B.trim);
+    var rows = [['Type', learn ? 'Learning book' : 'Story book'], ['Format', {paperback: 'Paperback', hardcover: 'Hardcover', ebook: 'Kindle eBook'}[fm] || fm],
+      ['Size', fm === 'ebook' ? '1600 × 2560 px' : t.w + ' × ' + t.h + ' in'], ['Language', B.lang || 'English'],
+      [learn ? 'Chapters' : 'Stories', B.nStories + ' × ' + B.beats + ' page' + (B.beats > 1 ? 's' : '')]];
+    if (B.seriesName && B.showSeries) rows.push(['Series', B.seriesName + (B.seriesNo ? ' #' + B.seriesNo : '')]);
+    el.innerHTML = rows.map(function (r) { return '<div><dt>' + esc(r[0]) + '</dt><dd>' + esc(r[1]) + '</dd></div>'; }).join('');
+  }
   function estimate() {
+    sideSum();
     var n = B.nStories, bt = B.beats, fake = { paper: B.paper, kdpFormat: B.kdpFormat, kind: B.kind, trim: B.trim, stories: [] };
     for (var i = 0; i < n; i++) { var o = { beats: [] }; for (var j = 0; j < bt; j++) o.beats.push({}); if (B.kind === 'learn' && bt >= 2) o.answers = new Array(bt === 4 ? 11 : 6).join('x\n').trim(); fake.stories.push(o); }
     var pl = SF.makePlan(fake), np = (B.kind === 'learn' ? n : n * bt) + 1;
