@@ -8,7 +8,12 @@
     'water': { label: 'Soft watercolor storybook', p: 'Soft watercolor children\'s picture-book illustration, hand-painted paper texture, gentle warm colours' },
     'flat': { label: 'Bright flat vector', p: 'Clean flat vector children\'s book illustration, bold simple shapes, bright limited colour palette' },
     'gouache': { label: 'Cozy gouache painting', p: 'Cozy gouache picture-book painting, visible brush strokes, warm glowing light' },
-    'comic': { label: 'Fun cartoon with ink lines', p: 'Fun cartoon illustration for kids, clean ink outlines, vivid flat colours, dynamic poses' }
+    'comic': { label: 'Fun cartoon with ink lines', p: 'Fun cartoon illustration for kids, clean ink outlines, vivid flat colours, dynamic poses' },
+    'e-real': { learn: 1, label: 'Realistic photo style', p: 'Realistic professional photograph style, natural lighting, true-to-life adults at work, sharp detail, clean uncluttered background' },
+    'e-semi': { learn: 1, label: 'Semi-realistic digital illustration', p: 'Semi-realistic digital illustration for an adult education book, natural proportions, friendly professional adults, soft realistic lighting, clean detail' },
+    'e-flat': { learn: 1, label: 'Clean educational flat vector', p: 'Clean modern flat vector illustration for an adult language-learning workbook, natural adult proportions, calm professional colour palette, simple clear shapes' },
+    'e-line': { learn: 1, label: 'Workbook line art with color', p: 'Workbook illustration with clean dark outlines and light flat colour fills, adult characters with natural proportions, clear simple scene, light background' },
+    'e-3d': { learn: 1, label: 'Modern 3D (adult characters)', p: 'Modern 3D rendered illustration, realistic adult characters with natural proportions, soft studio lighting, clean realistic environment' }
   };
   var EXAMPLES = [
     'Three kids find a glowing map in their grandfather\'s attic and sail to hidden islands.',
@@ -98,6 +103,11 @@
     var ex = B && B.kind === 'learn' ? LEARN_EXAMPLES : EXAMPLES;
     $('#chips').innerHTML = ex.map(function (e, i) { return '<button type="button" class="chip" data-i="' + i + '">' + esc(e) + '</button>'; }).join('');
   }
+  function paintStyles() {
+    var learn = B && B.kind === 'learn', ks = Object.keys(STYLES).filter(function (k) { return !!STYLES[k].learn === !!learn; });
+    $('#style').innerHTML = ks.map(function (k) { return '<option value="' + k + '">' + esc(STYLES[k].label) + '</option>'; }).join('');
+    if (B) { if (ks.indexOf(B.style) < 0) B.style = ks[0]; $('#style').value = B.style; }
+  }
   function applyKind() {                          // Story book / Learning book
     var learn = B.kind === 'learn';
     $('#learnBox').hidden = !learn; $('#ageField').hidden = learn;
@@ -106,10 +116,10 @@
     $('#kindNote').textContent = learn ? 'Every chapter has key words, a dialogue (with a picture) and exercises. The answers are printed at the end of the book. Tip: 6 × 9 in or 8.5 × 11 in fits lesson text better than a square book.' : 'Illustrated stories with the same characters from page to page.';
     $('#idea').placeholder = learn ? 'English for hotel housekeeping: greeting guests, cleaning rooms, asking for supplies.' : 'Three kids find a glowing map in their grandfather\'s attic and sail to a chain of hidden islands.';
     $$('input[name=kind]').forEach(function (r) { r.checked = r.value === B.kind; });
-    paintChips();
+    paintStyles(); paintChips();
   }
   function fillSelects() {
-    $('#style').innerHTML = Object.keys(STYLES).map(function (k) { return '<option value="' + k + '">' + esc(STYLES[k].label) + '</option>'; }).join('');
+    paintStyles();
     fillFormatSelects();
     paintChips();
   }
