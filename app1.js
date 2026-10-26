@@ -316,7 +316,8 @@
       return '<div class="c"><button type="button" class="ref" data-act="ref" data-c="' + i + '" aria-label="Reference image for ' + esc(c.name) + '">' + (RF[i] ? '<img alt="" src="' + RF[i].url + '">' : 'Add reference image') + '</button>' +
         '<input type="text" data-c="' + i + '" data-f="name" value="' + esc(c.name) + '" aria-label="Character name" maxlength="30">' +
         '<textarea rows="3" data-c="' + i + '" data-f="look" aria-label="How ' + esc(c.name) + ' looks" maxlength="260">' + esc(c.look) + '</textarea>' +
-        (RF[i] ? '<div class="acts"><button type="button" class="btn sm ghost" data-act="ref" data-c="' + i + '">Change image</button><button type="button" class="btn sm" data-act="cleanref" data-c="' + i + '">Make a clean reference</button><button type="button" class="btn sm ghost danger" data-act="refdel" data-c="' + i + '">Remove image</button></div>' : '') + '</div>';
+        (!RF[i] ? '<div class="acts"><button type="button" class="btn sm" data-act="portrait" data-c="' + i + '">Make portrait</button></div>' : '') +
+        (RF[i] ? '<div class="acts"><button type="button" class="btn sm ghost" data-act="portrait" data-c="' + i + '">New portrait</button><button type="button" class="btn sm ghost" data-act="ref" data-c="' + i + '">Change image</button><button type="button" class="btn sm" data-act="cleanref" data-c="' + i + '">Make a clean reference</button><button type="button" class="btn sm ghost danger" data-act="refdel" data-c="' + i + '">Remove image</button></div>' : '') + '</div>';
     }).join('');
     $('#stories').innerHTML = B.stories.map(function (s, i) {
       var beats = (s.beats || []).map(function (b, j) {
@@ -404,6 +405,37 @@
       SF.toast(ch.name + ' now has a clean reference. Not happy? Press it again or add another image.', 5200);
     } catch (e) { if (btn) { btn.disabled = false; btn.textContent = 'Make a clean reference'; } SF.toast(e.message || 'Could not make the reference.', 5000); }
   }
+  async function makePortrait(i) {               // text-to-picture model sheet of one character, saved as its reference image
+    var ch = B.characters[i]; if (!ch) return;
+    if (count() >= DAILY_LIMIT) throw Object.assign(new Error('Daily picture limit reached (' + DAILY_LIMIT + '). It resets tomorrow.'), { fatal: true });
+    var st = STYLES[B.style] || STYLES['3d'];
+    var prompt = 'Character model sheet for an illustrated book. Draw ONLY this one character: ' + ch.name + gTag(ch) + ' = ' + ch.look + '. Full body, standing straight, facing the camera with a gentle friendly expression, relaxed arms, centered, plain light-grey background, soft even lighting, clear face, nothing else in the picture. STYLE: ' + st.p + '. No text, no letters, no logos, no watermark, no frame.';
+    var seed = 1 + Math.floor(Math.random() * 2000000000), last;
+    for (var a = 1; a <= 3; a++) {
+      try {
+        var r = await fetch('/api/ai?prompt=' + encodeURIComponent(prompt.slice(0, 1100)) + '&seed=' + seed);
+        if (r.status === 429) throw Object.assign(new Error('Daily limit reached on the server. Try again tomorrow.'), { fatal: true });
+        var ct = r.headers.get('content-type') || '';
+        if (!r.ok || ct.indexOf('image') < 0) { var j = null; try { j = await r.json(); } catch (e) {} throw new Error(apiErr(r, j)); }
+        var bl = await shrink(await r.blob()); bump();
+        if (RF[i]) URL.revokeObjectURL(RF[i].url);
+        RF[i] = { blob: bl, url: URL.createObjectURL(bl) };
+        await SF.store.putImg(B.id, 'ref' + i, bl); return;
+      } catch (e) { last = e; if (e.fatal) throw e; await SF.sleep(1500 * a); }
+    }
+    throw last;
+  }
+  async function lockCharacters(onlyMissing) {    // one portrait per character; every later picture is drawn from them
+    var idx = B.characters.map(function (_, i) { return i; }).filter(function (i) { return !onlyMissing || !RF[i]; });
+    var btn = $('#btnPortraits'); if (btn) btn.disabled = true;
+    try {
+      for (var k = 0; k < idx.length; k++) {
+        pgen(true, 'Painting the character portraits… ' + (k + 1) + ' of ' + idx.length + ' (' + B.characters[idx[k]].name + ')', 0.03 + 0.9 * k / idx.length);
+        await makePortrait(idx[k]); renderStory();
+      }
+      if (idx.length) SF.toast('Character portraits ready. The pictures now use them, so each character looks the same on every page.', 5200);
+    } finally { pgen(false); if (btn) btn.disabled = false; }
+  }
   async function delRef(i) {
     if (RF[i]) URL.revokeObjectURL(RF[i].url); delete RF[i];
     await SF.store.delImg(B.id, 'ref' + i).catch(function () {}); renderStory();
@@ -446,7 +478,7 @@
   function renderPics() {
     var keys = imageKeys(), have = keys.filter(function (k) { return IM[k]; }).length;
     $$('input[name=upfit]').forEach(function (r) { r.checked = r.value === (B.upFit || 'whole'); });
-    coverFallback(); $('#coverHasT').checked = !!B.coverHasTitle; $('#coverFixA').checked = !!B.coverFixAuthor; $('#coverTitleText').value = B.coverTitleText || ''; coverTitleCheck(); $('#coverPrompt').value = B.cover.prompt; $('#coverDel').disabled = !IM.cover;
+    coverFallback(); $('#autoLock').checked = B.autoLock !== false; $('#coverHasT').checked = !!B.coverHasTitle; $('#coverFixA').checked = !!B.coverFixAuthor; $('#coverTitleText').value = B.coverTitleText || ''; coverTitleCheck(); $('#coverPrompt').value = B.cover.prompt; $('#coverDel').disabled = !IM.cover;
     $('#picInfo').textContent = B.stories.length ? have + ' of ' + keys.length + ' pictures ready. Each picture takes about 10 seconds. Left page is the text, right page is the picture. You can also upload your own picture for any page (only use pictures you have the right to use).' : 'Write your story first (step 1).';
     $('#btnAllPics').disabled = !B.stories.length;
     $('#spreads').innerHTML = B.stories.map(function (s, i) {
@@ -548,6 +580,9 @@
     if (picRun || !keys.length) return;
     picRun = true; picStop = false; $('#btnStopPics').hidden = false; $('#btnAllPics').disabled = true;
     var done = 0, total = keys.length, i = 0, err = null;
+    if (B.autoLock !== false && B.characters.length && B.characters.some(function (_, c) { return !RF[c]; })) {
+      try { await lockCharacters(true); } catch (e) { err = e; }
+    }
     pgen(true, 'Making pictures… 0 of ' + total, 0.02);
     async function worker() {
       while (!picStop && !err) {
@@ -743,6 +778,7 @@
       var p = e.target.closest('[data-act=ref]'), d = e.target.closest('[data-act=refdel]');
       if (d) delRef(+d.dataset.c);
       var cr = e.target.closest('[data-act=cleanref]'); if (cr) cleanRef(+cr.dataset.c);
+      var pt = e.target.closest('[data-act=portrait]'); if (pt) { pt.disabled = true; pt.textContent = 'Painting…'; pgen(true, 'Painting the portrait…', 0.3); makePortrait(+pt.dataset.c).then(function () { renderStory(); SF.toast('Portrait ready.'); }, function (er) { SF.toast(er.message || 'Could not make the portrait.', 5000); renderStory(); }).then(function () { pgen(false); }); }
       if (p) { refFor = +p.dataset.c; if (!refIn) { refIn = document.createElement('input'); refIn.type = 'file'; refIn.accept = 'image/*'; refIn.onchange = function () { var f = refIn.files[0]; refIn.value = ''; setRef(f); }; } refIn.click(); }
     });
     $('#spreads').addEventListener('input', onStoryInput);
@@ -757,6 +793,8 @@
     $$('.cpOpt').forEach(function (c) { c.checked = wantPrompt(); c.onchange = function () { try { localStorage.setItem('sf_cp', c.checked ? '1' : '0'); } catch (e) {} $$('.cpOpt').forEach(function (o) { o.checked = c.checked; }); }; });
     $$('input[name=upfit]').forEach(function (r) { r.onchange = function () { B.upFit = r.value; save(); }; });
     $('#btnAllPics').onclick = function () { runPics(missing()); };
+    $('#btnPortraits').onclick = function () { lockCharacters(false).catch(function (er) { SF.toast(er.message || 'Could not make the portraits.', 5000); }); };
+    $('#autoLock').addEventListener('change', function (e) { B.autoLock = e.target.checked; save(); });
     $('#btnStopPics').onclick = function () { picStop = true; };
     $('#coverHasT').addEventListener('change', function (e) { B.coverHasTitle = e.target.checked; save(); coverTitleCheck(); });
     $('#coverTitleText').addEventListener('input', function (e) { B.coverTitleText = e.target.value; save(); coverTitleCheck(); });

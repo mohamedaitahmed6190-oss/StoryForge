@@ -364,6 +364,8 @@ h3{font-size:20px}
       <div class="field"><label for="bDed">Dedication</label><input type="text" id="bDed" maxlength="160"></div>
       <h3 style="margin-top:28px">Characters</h3>
       <p class="refnote">Tap the square to add a reference image of the character, then press <b>Make a clean reference</b>. The pictures use that image to keep the same face, age and outfit in every page.</p>
+      <div class="btns" style="margin:12px 0 4px"><button class="btn" id="btnPortraits" type="button">Create all character portraits</button></div>
+      <p class="refnote">The magic step: paint each character once. Every picture after that is drawn from these portraits, so faces, hair and outfits stay the same from page to page. Not happy with one? Press <b>New portrait</b>.</p>
       <div class="chars" id="chars"></div>
       <h3 style="margin-top:28px">Stories</h3>
       <div id="stories"></div>
@@ -376,6 +378,7 @@ h3{font-size:20px}
     <p class="kick">Step 3 of 4</p>
     <h2>Make the pictures</h2>
     <p class="lead" id="picInfo"></p>
+    <div class="chk"><input type="checkbox" id="autoLock" checked><label for="autoLock"><b>Paint the character portraits first (recommended)</b><div class="hint">Characters without a portrait get one before the first picture, and every picture is then drawn from the portraits.</div></label></div>
     <div class="btns"><button class="btn red" id="btnAllPics">Make all missing pictures</button><button class="btn ghost" id="btnStopPics" hidden>Stop</button></div>
     <div class="field"><label>When I upload my own picture</label><div class="seg" role="radiogroup"><label><input type="radio" name="upfit" value="whole" checked><span>Keep the whole picture</span></label><label><input type="radio" name="upfit" value="fill"><span>Fill the page (crops edges)</span></label></div><div class="hint">Keep the whole picture: nothing is cut, it is only resized to the exact KDP page (bleed included) at 300 DPI.</div></div>
     <div class="chk"><input type="checkbox" class="cpOpt" id="cpOpt3" checked><label for="cpOpt3"><b>Add the KDP picture size under the page text when I copy</b><div class="hint">Only the size line is added. No scene, no characters.</div></label></div>
@@ -420,6 +423,6 @@ h3{font-size:20px}
 <script src="app3.js?v=5"></script>
 <script src="app2.js?v=14"></script>
 <script src="app4.js?v=3"></script>
-<script src="app1.js?v=29"></script>
+<script src="app1.js?v=30"></script>
 </body>
 </html>
