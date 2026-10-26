@@ -9,7 +9,7 @@
     'flat': { label: 'Bright flat vector', p: 'Clean flat vector children\'s book illustration, bold simple shapes, bright limited colour palette' },
     'gouache': { label: 'Cozy gouache painting', p: 'Cozy gouache picture-book painting, visible brush strokes, warm glowing light' },
     'comic': { label: 'Fun cartoon with ink lines', p: 'Fun cartoon illustration for kids, clean ink outlines, vivid flat colours, dynamic poses' },
-    'e-real': { learn: 1, label: 'Realistic photo style', p: 'Realistic professional photograph style, natural lighting, true-to-life adults at work, sharp detail, clean uncluttered background' },
+    'e-real': { learn: 1, both: 1, photo: 1, label: 'Realistic photo style', p: 'Photorealistic photograph, shot on a professional camera, natural lighting, real people with natural skin texture and true-to-life proportions, sharp detail, clean uncluttered background' },
     'e-semi': { learn: 1, label: 'Semi-realistic digital illustration', p: 'Semi-realistic digital illustration for an adult education book, natural proportions, friendly professional adults, soft realistic lighting, clean detail' },
     'e-flat': { learn: 1, label: 'Clean educational flat vector', p: 'Clean modern flat vector illustration for an adult language-learning workbook, natural adult proportions, calm professional colour palette, simple clear shapes' },
     'e-line': { learn: 1, label: 'Workbook line art with color', p: 'Workbook illustration with clean dark outlines and light flat colour fills, adult characters with natural proportions, clear simple scene, light background' },
@@ -104,7 +104,7 @@
     $('#chips').innerHTML = ex.map(function (e, i) { return '<button type="button" class="chip" data-i="' + i + '">' + esc(e) + '</button>'; }).join('');
   }
   function paintStyles() {
-    var learn = B && B.kind === 'learn', ks = Object.keys(STYLES).filter(function (k) { return !!STYLES[k].learn === !!learn; });
+    var learn = B && B.kind === 'learn', ks = Object.keys(STYLES).filter(function (k) { return !!STYLES[k].learn === !!learn || !!STYLES[k].both; });
     $('#style').innerHTML = ks.map(function (k) { return '<option value="' + k + '">' + esc(STYLES[k].label) + '</option>'; }).join('');
     if (B) { if (ks.indexOf(B.style) < 0) B.style = ks[0]; $('#style').value = B.style; }
   }
@@ -393,7 +393,7 @@
     try {
       if (count() >= DAILY_LIMIT) throw new Error('Daily picture limit reached.');
       var st = STYLES[B.style] || STYLES['3d'], fd = new FormData();
-      fd.append('prompt', 'Character model sheet for a children\'s picture book. Draw ONLY the character ' + ch.name + ' from image 0: full body, standing straight, facing the camera with a gentle smile, relaxed arms, plain light-grey background, soft even lighting. Keep exactly the same face, hair, skin tone, age and outfit as image 0. ' + ch.look + '. STYLE: ' + st.p + '. One character only, no other people, no text, no watermark.');
+      fd.append('prompt', (st.photo ? 'Photorealistic studio photograph, not a drawing. ' : 'Character model sheet for a picture book. ') + 'Draw ONLY the character ' + ch.name + ' from image 0: full body, standing straight, facing the camera with a gentle smile, relaxed arms, plain light-grey background, soft even lighting. Keep exactly the same face, hair, skin tone, age and outfit as image 0. ' + ch.look + '. STYLE: ' + st.p + '. One character only, no other people, no text, no watermark.');
       fd.append('width', '768'); fd.append('height', '1024'); fd.append('seed', String(1 + Math.floor(Math.random() * 2000000000)));
       fd.append('input_image_0', RF[i].blob, 'ref.jpg');
       var r = await fetch('/api/ai?mode=ref', { method: 'POST', body: fd });
@@ -409,7 +409,8 @@
     var ch = B.characters[i]; if (!ch) return;
     if (count() >= DAILY_LIMIT) throw Object.assign(new Error('Daily picture limit reached (' + DAILY_LIMIT + '). It resets tomorrow.'), { fatal: true });
     var st = STYLES[B.style] || STYLES['3d'];
-    var prompt = 'Character model sheet for an illustrated book. Draw ONLY this one character: ' + ch.name + gTag(ch) + ' = ' + ch.look + '. Full body, standing straight, facing the camera with a gentle friendly expression, relaxed arms, centered, plain light-grey background, soft even lighting, clear face, nothing else in the picture. STYLE: ' + st.p + '. No text, no letters, no logos, no watermark, no frame.';
+    var prompt = st.photo ? 'Photorealistic full-body photograph of ONE real person, shot on a professional camera with an 85mm lens, natural skin texture, true-to-life proportions: ' + ch.name + gTag(ch) + ' = ' + ch.look + '. Standing straight, facing the camera with a gentle friendly expression, relaxed arms, centered, plain light-grey studio background, soft even lighting, clear face, nobody else in the picture. STYLE: ' + st.p + '. No text, no letters, no logos, no watermark, no frame, not a drawing, not a cartoon, not 3D.'
+      : 'Character model sheet for an illustrated book. Draw ONLY this one character: ' + ch.name + gTag(ch) + ' = ' + ch.look + '. Full body, standing straight, facing the camera with a gentle friendly expression, relaxed arms, centered, plain light-grey background, soft even lighting, clear face, nothing else in the picture. STYLE: ' + st.p + '. No text, no letters, no logos, no watermark, no frame.';
     var seed = 1 + Math.floor(Math.random() * 2000000000), last;
     for (var a = 1; a <= 3; a++) {
       try {
