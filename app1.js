@@ -236,6 +236,12 @@
     [B.title, B.subtitle].forEach(function (w) { w = String(w || '').trim(); if (w.length > 2) out = out.split(w).join('').split(w.toLowerCase()).join(''); });
     return out.replace(/["“”]/g, '').replace(/\s{2,}/g, ' ').replace(/\s+([.,])/g, '$1').trim();
   }
+  function ageOf(c) { var m = /(\d{1,2})[\s-]*(?:year|yr)/i.exec(String(c.look || '')); return m ? parseInt(m[1], 10) : 0; }
+  function isAdultBook() { return B.kind === 'learn' || B.age === '18+' || B.characters.some(function (c) { return ageOf(c) >= 18; }); }
+  function adultLine(chars) {                    // stops the picture model from turning grown-ups into kids
+    if (!isAdultBook()) return '';
+    return 'EVERY CHARACTER IS A GROWN ADULT (' + chars.map(function (c) { var n = ageOf(c); return c.name + (n ? ' is ' + n + ' years old' : ' is an adult'); }).join('; ') + '): mature adult face with adult features, adult body proportions (head about one seventh of the body height), adult height. NEVER a child, teenager, kid, baby face, chibi, doll or big-head caricature. ';
+  }
   function gTag(c) { var l = String(c.look || ''); return /\bgirl\b/i.test(l) ? ' (a girl)' : /\bboy\b/i.test(l) ? ' (a boy)' : /\bwoman\b/i.test(l) ? ' (a woman)' : /\bman\b/i.test(l) ? ' (a man)' : ''; }
   function enforceCast(o, cast) {                // if the AI still renamed the characters, put the author's names back
     var want = String(cast || '').split(/,|&|\band\b|\+|;/i).map(function (x) { return x.trim(); }).filter(Boolean).slice(0, 4);
@@ -395,7 +401,7 @@
     try {
       if (count() >= DAILY_LIMIT) throw new Error('Daily picture limit reached.');
       var st = STYLES[B.style] || STYLES['3d'], fd = new FormData();
-      fd.append('prompt', (st.photo ? 'Photorealistic studio photograph, not a drawing. ' : 'Character model sheet for a picture book. ') + 'Draw ONLY the character ' + ch.name + ' from image 0: full body, standing straight, facing the camera with a gentle smile, relaxed arms, plain light-grey background, soft even lighting. Keep exactly the same face, hair, skin tone, age and outfit as image 0. ' + ch.look + '. STYLE: ' + st.p + '. One character only, no other people, no text, no watermark.');
+      fd.append('prompt', adultLine([ch]) + (st.photo ? 'Photorealistic studio photograph, not a drawing. ' : 'Character model sheet for a picture book. ') + 'Draw ONLY the character ' + ch.name + ' from image 0: full body, standing straight, facing the camera with a gentle smile, relaxed arms, plain light-grey background, soft even lighting. Keep exactly the same face, hair, skin tone, age and outfit as image 0. ' + ch.look + '. STYLE: ' + st.p + '. One character only, no other people, no text, no watermark.');
       fd.append('width', '768'); fd.append('height', '1024'); fd.append('seed', String(1 + Math.floor(Math.random() * 2000000000)));
       fd.append('input_image_0', RF[i].blob, 'ref.jpg');
       var r = await fetch('/api/ai?mode=ref', { method: 'POST', body: fd });
@@ -411,8 +417,8 @@
     var ch = B.characters[i]; if (!ch) return;
     if (count() >= DAILY_LIMIT) throw Object.assign(new Error('Daily picture limit reached (' + DAILY_LIMIT + '). It resets tomorrow.'), { fatal: true });
     var st = STYLES[B.style] || STYLES['3d'];
-    var prompt = st.photo ? 'Photorealistic full-body photograph of ONE real person, shot on a professional camera with an 85mm lens, natural skin texture, true-to-life proportions: ' + ch.name + gTag(ch) + ' = ' + ch.look + '. Standing straight, facing the camera with a gentle friendly expression, relaxed arms, centered, plain light-grey studio background, soft even lighting, clear face, nobody else in the picture. STYLE: ' + st.p + '. No text, no letters, no logos, no watermark, no frame, not a drawing, not a cartoon, not 3D.'
-      : 'Character model sheet for an illustrated book. Draw ONLY this one character: ' + ch.name + gTag(ch) + ' = ' + ch.look + '. Full body, standing straight, facing the camera with a gentle friendly expression, relaxed arms, centered, plain light-grey background, soft even lighting, clear face, nothing else in the picture. STYLE: ' + st.p + '. No text, no letters, no logos, no watermark, no frame.';
+    var prompt = adultLine([ch]) + (st.photo ? 'Photorealistic medium portrait photograph (from the head down to the hips) of ONE real person, shot on a professional camera with an 85mm lens, natural skin texture, true-to-life proportions: ' + ch.name + gTag(ch) + ' = ' + ch.look + '. Facing the camera with a calm friendly expression, shoulders square, centered, large clearly visible face, plain light-grey studio background, soft even lighting, nobody else in the picture. STYLE: ' + st.p + '. No text, no letters, no logos, no watermark, no frame, not a drawing, not a cartoon, not 3D.'
+      : 'Character reference portrait for an illustrated book. Draw ONLY this one character: ' + ch.name + gTag(ch) + ' = ' + ch.look + '. Medium shot from the head down to the hips, facing the camera with a calm friendly expression, centered, large clearly visible face, plain light-grey background, soft even lighting, nothing else in the picture. STYLE: ' + st.p + '. No text, no letters, no logos, no watermark, no frame.');
     var seed = 1 + Math.floor(Math.random() * 2000000000), last;
     for (var a = 1; a <= 3; a++) {
       try {
@@ -443,8 +449,8 @@
     var ch = B.characters[i]; if (!ch || !RF[i]) return;
     if (count() >= DAILY_LIMIT) throw Object.assign(new Error('Daily picture limit reached (' + DAILY_LIMIT + '). It resets tomorrow.'), { fatal: true });
     var st = STYLES[B.style] || STYLES['3d'], fd = new FormData();
-    fd.append('prompt', (st.photo ? 'Turn image 0 into a photorealistic studio photograph of the same real person (not a drawing, not a cartoon, not 3D): natural skin texture, real hair, real fabric, true-to-life proportions. ' : 'Redraw the character from image 0 in a new picture style. ') +
-      'Draw ONLY the character ' + ch.name + gTag(ch) + ': full body, standing straight, facing the camera with a gentle friendly expression, relaxed arms, plain light-grey background, soft even lighting. Keep exactly the same face shape, hair style and colour, skin tone, age, body build and outfit colours as image 0. ' + ch.look + '. STYLE: ' + st.p + '. One person only, no other people, no text, no watermark.');
+    fd.append('prompt', adultLine([ch]) + (st.photo ? 'Turn image 0 into a photorealistic studio photograph of the same real person (not a drawing, not a cartoon, not 3D): natural skin texture, real hair, real fabric, true-to-life proportions. ' : 'Redraw the character from image 0 in a new picture style. ') +
+      'Draw ONLY the character ' + ch.name + gTag(ch) + ': medium shot from the head down to the hips, facing the camera with a calm friendly expression, large clearly visible face, plain light-grey background, soft even lighting. Keep exactly the same face shape, hair style and colour, skin tone, age, body build and outfit colours as image 0. ' + ch.look + '. STYLE: ' + st.p + '. One person only, no other people, no text, no watermark.');
     fd.append('width', '768'); fd.append('height', '1024'); fd.append('seed', String(1 + Math.floor(Math.random() * 2000000000)));
     fd.append('input_image_0', RF[i].blob, 'ref.jpg');
     var last;
@@ -491,12 +497,13 @@
     cast = B.characters.map(function (c, i) { return { c: c, i: i }; }).filter(function (x) { return x.c.name && new RegExp('\\b' + escRe(x.c.name) + '\\b', 'i').test(hay); });
     if ((!cast.length || GROUP.test(scene)) && B.characters.length) cast = B.characters.slice(0, 3).map(function (c, i) { return { c: c, i: i }; });
     var withRef = cast.filter(function (x) { return RF[x.i]; }).slice(0, 4), noRef = cast.filter(function (x) { return !RF[x.i]; });
-    var tail = ' SCENE: ' + scene + ' STYLE: ' + st.p + '. ' + extra + ' No text, no letters, no logos, no watermark, no frame.', lock = '';
+    var tail = ' SCENE: ' + scene + ' STYLE: ' + st.p + '. ' + extra + ' No text, no letters, no logos, no watermark, no frame.' + (isAdultBook() ? ' Not a child, not a kid.' : ''), lock = '';
     if (withRef.length) {
-      lock = withRef.map(function (x, k) { return 'Image ' + k + ' is the character ' + x.c.name + gTag(x.c); }).join('. ') + '. Draw these characters in the scene exactly like their reference images: same face, same hair, same skin tone, same age, same height and body proportions, same outfit and colours, never change clothes. ' + (B.age === '18+' ? 'All characters are adults with natural adult proportions, never childlike, not chibi. ' : 'All children are 8 to 10 years old with natural child proportions, not chibi or baby-like. ');
+      lock = withRef.map(function (x, k) { return 'Image ' + k + ' is the character ' + x.c.name + gTag(x.c); }).join('. ') + '. Draw these characters in the scene exactly like their reference images: same face, same hair, same skin tone, same age, same height and body proportions, same outfit and colours, never change clothes. ' + (isAdultBook() ? '' : 'All children are 8 to 10 years old with natural child proportions, not chibi or baby-like. ');
     }
     var looks = noRef.map(function (x) { return x.c.name + gTag(x.c) + ' = ' + x.c.look + '.'; }).join(' ');
     if (looks) lock += 'CHARACTERS (identical in every picture: same face, same hair, same exact outfit and colours): ' + looks + ' ';
+    lock = adultLine(cast.map(function (x) { return x.c; })) + lock;
     return { prompt: (lock + tail).slice(0, 1700), refs: withRef.map(function (x) { return RF[x.i].blob; }) };
   }
   function promptFor(key) { return buildFor(key).prompt; }
