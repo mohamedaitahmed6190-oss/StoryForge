@@ -5,7 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>StoryForge — picture books ready for KDP</title>
 <meta name="description" content="Type an idea. Get a finished picture book: story, dialogue, illustrations, interior PDF and cover PDF sized for Amazon KDP.">
-<meta name="theme-color" content="#0D1220">
+<meta name="theme-color" content="#0D1220" id="themeMeta">
+<script>try{var t=localStorage.getItem("sf_theme");if(!t)t=matchMedia("(prefers-color-scheme: light)").matches?"light":"dark";document.documentElement.dataset.theme=t;document.getElementById("themeMeta").content=t==="light"?"#F6F3EC":"#0D1220"}catch(e){}</script>
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="apple-touch-icon" href="/icons/icon-192.png">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/bricolage-grotesque@5/600.css">
@@ -13,10 +14,11 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/nunito@5/400.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/nunito@5/700.css">
 <style>
-:root{--bg:#0C101C;--bg2:#10162A;--card:#151C32;--card2:#1B2440;--line:#27324F;--ink:#EEF1F8;--soft:#9BA7C4;--dim:#6F7C9E;--amber:#FFB547;--coral:#FF6F59;--teal:#3DD6B5;--ok:#3DD6B5;--warn:#FFB547;--bad:#FF6B7F;--paper:#FBF8F1;--ar:1/1;--r:14px}
+:root{--bg:#0C101C;--bg2:#10162A;--card:#151C32;--card2:#1B2440;--line:#27324F;--ink:#EEF1F8;--soft:#9BA7C4;--dim:#6F7C9E;--amber:#FFB547;--coral:#FF6F59;--teal:#3DD6B5;--ok:#3DD6B5;--warn:#FFB547;--bad:#FF6B7F;--paper:#FBF8F1;--ar:1/1;--r:14px;--glow:#1D2A55;--chrome:rgba(12,16,28,.88);--opt:#151C32;color-scheme:dark}
+:root[data-theme=light]{--bg:#F6F3EC;--bg2:#ECE8DD;--card:#FFFFFF;--card2:#F4F1E8;--line:#D9D3C4;--ink:#1A2038;--soft:#4D5876;--dim:#737B96;--amber:#F29A1F;--coral:#F0674F;--teal:#0E9F85;--ok:#0C8A73;--warn:#A86500;--bad:#D0344B;--glow:#FBE6C4;--chrome:rgba(246,243,236,.9);--opt:#FFFFFF;color-scheme:light}
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%;background:var(--bg)}
-body{margin:0;background:radial-gradient(900px 420px at 85% -80px,#1D2A55 0,transparent 70%),var(--bg);color:var(--ink);font:400 16px/1.55 Nunito,system-ui,sans-serif;padding-bottom:calc(92px + env(safe-area-inset-bottom));min-height:100vh}
+body{margin:0;background:radial-gradient(900px 420px at 85% -80px,var(--glow) 0,transparent 70%),var(--bg);color:var(--ink);font:400 16px/1.55 Nunito,system-ui,sans-serif;padding-bottom:calc(92px + env(safe-area-inset-bottom));min-height:100vh}
 h1,h2,h3{font-family:'Bricolage Grotesque',Nunito,sans-serif;line-height:1.12;margin:0;letter-spacing:-.01em}
 h2{font-size:30px;font-weight:800}
 h3{font-size:19px;font-weight:600}
@@ -25,6 +27,7 @@ p{margin:0}
 button,input,select,textarea{font:inherit;color:inherit}
 :focus-visible{outline:3px solid var(--amber);outline-offset:2px}
 [hidden]{display:none!important}
+:root[data-theme=light] #toast{background:#1A2038;color:#fff}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 
 .top{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 16px 10px;max-width:820px;margin:0 auto}
@@ -33,7 +36,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 .top .r{display:flex;align-items:center;gap:6px;flex-shrink:0}
 #counter{font-size:12px;color:var(--soft);background:var(--card);border:1px solid var(--line);border-radius:999px;padding:5px 10px;white-space:nowrap}
 
-.steps{position:sticky;top:0;z-index:20;background:rgba(12,16,28,.86);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.steps{position:sticky;top:0;z-index:20;background:var(--chrome);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
 .steps ul{list-style:none;margin:0 auto;padding:8px 10px;max-width:820px;display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
 .steps button{width:100%;display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:0;padding:6px 2px;cursor:pointer;font:700 12.5px Nunito;color:var(--dim);border-radius:10px}
 .steps button b{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font:700 13px 'Bricolage Grotesque';background:var(--card);border:1px solid var(--line);color:var(--soft)}
@@ -52,7 +55,7 @@ fieldset{border:0;padding:0;margin:16px 0}
 .hint{font-size:13px;color:var(--dim);margin-top:4px}
 input[type=text],input[type=number],select,textarea{width:100%;background:var(--bg2);border:1.5px solid var(--line);border-radius:12px;padding:11px 13px;min-height:48px;color:var(--ink)}
 select{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none' stroke='%239BA7C4' stroke-width='2'%3E%3Cpath d='M1 1l5 5 5-5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:38px}
-option{background:#151C32}
+option{background:var(--opt);color:var(--ink)}
 textarea{resize:vertical;min-height:96px}
 input::placeholder,textarea::placeholder{color:var(--dim)}
 input:focus,select:focus,textarea:focus{border-color:var(--amber);outline:none;box-shadow:0 0 0 3px rgba(255,181,71,.15)}
@@ -84,7 +87,7 @@ details.more summary{cursor:pointer;font-weight:700;padding:14px 0;font-family:'
 .btn[disabled]{opacity:.45;cursor:not-allowed}
 .btns{display:flex;flex-wrap:wrap;gap:10px;margin:18px 0}
 
-.bar{position:fixed;left:0;right:0;bottom:0;z-index:30;background:rgba(12,16,28,.9);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-top:1px solid var(--line);padding:10px 16px calc(10px + env(safe-area-inset-bottom))}
+.bar{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--chrome);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-top:1px solid var(--line);padding:10px 16px calc(10px + env(safe-area-inset-bottom))}
 .bar>div{max-width:820px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px}
 .bar .st{font-size:13px;color:var(--soft);flex:1;text-align:center;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
@@ -175,7 +178,7 @@ dialog .btns{justify-content:flex-end;margin-bottom:0}
     <span class="mark"><svg width="20" height="20" viewBox="0 0 24 24" fill="#1A1220" aria-hidden="true"><path d="M5 3h11a3 3 0 013 3v14l-4-2.5L11 20V6a3 3 0 00-3-3z" opacity=".9"/><path d="M17.5 1l.9 2.1L20.5 4l-2.1.9L17.5 7l-.9-2.1L14.5 4l2.1-.9z"/></svg></span>
     StoryForge
   </div>
-  <div class="r"><span id="counter" title="Pictures made today"></span><button class="btn ghost sm" id="btnBooks">My books</button><button class="btn ghost sm danger" id="btnReset" title="Delete everything and start a new book">New</button></div>
+  <div class="r"><button class="btn ghost sm" id="btnTheme" aria-label="Switch between light and dark mode" title="Light / dark"></button><span id="counter" title="Pictures made today"></span><button class="btn ghost sm" id="btnBooks">My books</button><button class="btn ghost sm danger" id="btnReset" title="Delete everything and start a new book">New</button></div>
 </header>
 <nav class="steps" aria-label="Steps"><ul id="steps">
   <li><button data-step="1"><b>1</b>Idea</button></li>
@@ -319,6 +322,7 @@ dialog .btns{justify-content:flex-end;margin-bottom:0}
 <dialog id="booksDlg"><h3>My books</h3><div class="books" id="booksList"></div><div class="btns" style="justify-content:flex-start"><button class="btn sm red" id="booksBook2">Load Book 2: The Moonlight Map</button><button class="btn sm ghost" id="booksImport">Import file</button></div><div class="btns"><button class="btn ghost" id="booksClose">Close</button><button class="btn" id="booksNew">New book</button></div></dialog>
 <div id="toast" role="status" aria-live="polite"></div>
 
+<script>(function(){var b=document.getElementById("btnTheme"),m=document.getElementById("themeMeta");function paint(){var l=document.documentElement.dataset.theme==="light";b.textContent=l?"Dark":"Light";m.content=l?"#F6F3EC":"#0D1220"}paint();b.onclick=function(){var n=document.documentElement.dataset.theme==="light"?"dark":"light";document.documentElement.dataset.theme=n;try{localStorage.setItem("sf_theme",n)}catch(e){}paint()}})();</script>
 <script src="app3.js?v=5"></script>
 <script src="app2.js?v=13"></script>
 <script src="app4.js?v=2"></script>
