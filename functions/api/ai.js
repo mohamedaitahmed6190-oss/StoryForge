@@ -193,6 +193,13 @@ ${all}
 This chapter: "${clip(cur.title, 80)}" - ${clip(cur.summary, 300)} Goal: ${clip(cur.lesson, 90)}. Setting: ${clip(cur.setting, 150)}.
 Write exactly ${beats} pages:
 ${spec}
+QUALITY RULES (very important, learners will trust this book):
+- Key words are useful vocabulary for this topic (objects, actions, phrases). Never a character name, never a definition that repeats the word itself, and every definition uses simpler words than the key word. Every example sentence is natural.
+- The dialogue is natural, polite everyday ${lang} that real people say at this level, with correct grammar ("Okay, I can help you", not "Okay, I help you"). Every line ends with correct punctuation. Do NOT invent facts that the exercises will need beyond the dialogue and key words.
+- Every exercise can be answered ONLY from this chapter's key words and dialogue, and has exactly ONE correct answer: never offer two options that are both correct. The answer must fit the sentence grammatically (check verb forms: "Vega makes the bed", not "make").
+- For true or false items, about half are TRUE and half FALSE, and each is clearly decided by the dialogue. Do not repeat the same exercise as in other chapters.
+- Format every exercise the same way: blanks are written ______ and the options go in brackets like (option one / option two).
+- Before you answer, check each exercise one by one against the dialogue and make sure the answers are correct.
 Keep every page under 140 words. Plain text only: no markdown, no asterisks, no tables. Separate lines with \\n. Be accurate: every sentence must be correct and natural ${lang}.
 ${hasEx ? 'Also write "answers": the answers to every numbered exercise of this chapter, one per line, numbered like the exercises (for example "1. b", "2. true"), at most 10 lines.' : 'Set "answers" to an empty string.'}
 

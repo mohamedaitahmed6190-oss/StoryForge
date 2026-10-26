@@ -140,7 +140,7 @@
         var hasHead = d.b === 0, headText = hasHead ? (d.s + 1) + '  ' + (story.title || '') : '';
         var topY = pic ? E.picH + 70 : 150, boxH = E.coverH - topY - 80;
         var headLines = (hasHead ? Math.max(1, Math.ceil(headText.length * 62 * 0.56 / 1380)) : 0) + (lab ? 1 : 0);
-        var fs = fitSize(paras, 1380, boxH, headLines, learn ? 52 : 62, 30), col = SF.storyColor(d.s);
+        var fs = fitSize(paras, 1380, boxH, headLines, learn ? 64 : 62, 30), col = SF.storyColor(d.s);
         var imgTag = '';
         if (pic) {
           var blob = deps.getBlob(d.key), img;
